@@ -1,13 +1,32 @@
-import axios from 'axios';
+const jwt  = require('jsonwebtoken');
+const User = require('../models/User');
 
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
-});
+const protect = async (req, res, next) => {
+  let token;
+  if (req.headers.authorization?.startsWith('Bearer')) {
+    token = req.headers.authorization.split(' ')[1];
+  }
 
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
+  if (!token) return res.status(401).json({
+    success: false,
+    message: 'Not authorized — no token'
+  });
 
-export default api;
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    req.user = await User.findById(decoded.id).select('-passwordHash');
+
+    if (!req.user) return res.status(401).json({
+      success: false,
+      message: 'User no longer exists'
+    });
+
+    next();
+  } catch {
+    res.status(401).json({
+      success: false,
+      message: 'Token invalid or expired'
+    });
+  }
+};
