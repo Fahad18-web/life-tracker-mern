@@ -1,32 +1,25 @@
-const jwt  = require('jsonwebtoken');
-const User = require('../models/User');
+import axios from 'axios';
 
-const protect = async (req, res, next) => {
-  let token;
-  if (req.headers.authorization?.startsWith('Bearer')) {
-    token = req.headers.authorization.split(' ')[1];
+const api = axios.create({ baseURL: '/api' });
+
+// Attach JWT token to every request automatically
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('lt_token');
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+// Handle 401 globally — log user out
+api.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    if (err.response?.status === 401) {
+      localStorage.removeItem('lt_token');
+      localStorage.removeItem('lt_user');
+      window.location.href = '/login';
+    }
+    return Promise.reject(err);
   }
+);
 
-  if (!token) return res.status(401).json({
-    success: false,
-    message: 'Not authorized — no token'
-  });
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    req.user = await User.findById(decoded.id).select('-passwordHash');
-
-    if (!req.user) return res.status(401).json({
-      success: false,
-      message: 'User no longer exists'
-    });
-
-    next();
-  } catch {
-    res.status(401).json({
-      success: false,
-      message: 'Token invalid or expired'
-    });
-  }
-};
+export default api;
