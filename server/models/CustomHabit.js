@@ -4,8 +4,7 @@ const CustomHabitSchema = new mongoose.Schema({
   userId: {
     type:     mongoose.Schema.Types.ObjectId,
     ref:      'User',
-    required: true,
-    index:    true
+    required: true
   },
   name: {
     type:      String,
@@ -24,6 +23,10 @@ const CustomHabitSchema = new mongoose.Schema({
     required: [true, 'Habit type (good or bad) is required']
   }
 }, { timestamps: true });
+
+// Indexes
+CustomHabitSchema.index({ userId: 1, createdAt: 1 });
+CustomHabitSchema.index({ userId: 1, type: 1 });
 
 // Max 10 custom habits per user
 CustomHabitSchema.statics.countForUser = function (userId) {

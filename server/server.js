@@ -1,34 +1,51 @@
 const express = require('express');
-const cors    = require('cors');
-const morgan  = require('morgan');
-const dotenv  = require('dotenv');
-const connectDB    = require('./config/db');
+const cors = require('cors');
+const morgan = require('morgan');
+const config = require('./config');
+const connectDB = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
+const { securityMiddleware } = require('./middleware/security');
 
-dotenv.config();
 connectDB();
 
 const app = express();
 
-// ── Middleware ───────────────────────────────────────
-app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
-app.use(express.json());
-app.use(morgan('dev'));
+// Security middlewares
+app.use(securityMiddleware);
 
-// ── Routes ──────────────────────────────────────────
-app.use('/api/auth',                require('./routes/auth'));
-app.use('/api/entries',             require('./routes/entries'));
-app.use('/api/analytics',           require('./routes/analytics'));
-app.use('/api/habits',              require('./routes/habits'));
-app.use('/api/custom-habits',       require('./routes/customHabits'));
-app.use('/api/users',               require('./routes/users'));
-app.use('/api/habit-replacements',  require('./routes/habitReplacements'));  // ← NEW
+// CORS
+app.use(cors({
+  origin: config.clientUrl,
+  credentials: true
+}));
 
-// ── Health Check ─────────────────────────────────────
-app.get('/', (req, res) => res.json({ message: '🌿 Life Tracker API is running' }));
+// Body parser
+app.use(express.json({ limit: '10kb' }));
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
-// ── Global Error Handler ─────────────────────────────
+// Logging
+app.use(morgan(config.isDev ? 'dev' : 'combined'));
+
+// Routes
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/entries', require('./routes/entries'));
+app.use('/api/analytics', require('./routes/analytics'));
+app.use('/api/habits', require('./routes/habits'));
+app.use('/api/custom-habits', require('./routes/customHabits'));
+app.use('/api/users', require('./routes/users'));
+app.use('/api/habit-replacements', require('./routes/habitReplacements'));
+
+// Health check
+app.get('/', (req, res) => {
+  res.json({
+    message: '🌿 Life Tracker API is running',
+    env: config.env
+  });
+});
+
+// Global error handler
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`✅ Server running on port ${PORT} [${process.env.NODE_ENV}]`));
+app.listen(config.port, () => {
+  console.log(`✅ Server running on port ${config.port} [${config.env}]`);
+});

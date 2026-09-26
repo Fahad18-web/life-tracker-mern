@@ -4,11 +4,10 @@ const EntrySchema = new mongoose.Schema({
   userId: {
     type:     mongoose.Schema.Types.ObjectId,
     ref:      'User',
-    required: true,
-    index:    true
+    required: true
   },
   date: {
-    type:     String,         // "YYYY-MM-DD" — one entry per user per date
+    type:     String, // "YYYY-MM-DD"
     required: true
   },
   good: {
@@ -28,7 +27,6 @@ const EntrySchema = new mongoose.Schema({
     late:            { type: Boolean, default: false },
     fajr:            { type: Boolean, default: false }
   },
-  // ── Custom Habits (denormalized for history integrity) ──────────
   customHabits: [{
     habitId:   { type: mongoose.Schema.Types.ObjectId, ref: 'CustomHabit' },
     name:      { type: String },
@@ -42,10 +40,14 @@ const EntrySchema = new mongoose.Schema({
   grade:    { type: String }
 }, { timestamps: true });
 
-// Compound unique index — one entry per user per day
+// ── Indexes ──────────────────────────────────────────
+// 1. One entry per user per day (unique)
 EntrySchema.index({ userId: 1, date: 1 }, { unique: true });
 
-// ── Auto-calculate netScore + grade (includes custom habits) ──────
+// 2. Fast range queries + newest first (weekly/monthly/streaks)
+EntrySchema.index({ userId: 1, date: -1 });
+
+// ── Auto-calculate netScore + grade ──────────────────
 EntrySchema.pre('save', function (next) {
   const goodKeys = Object.keys(this.good);
   const badKeys  = Object.keys(this.bad);
@@ -53,7 +55,6 @@ EntrySchema.pre('save', function (next) {
   const defaultGoodDone = goodKeys.filter(k => this.good[k]).length;
   const defaultBadDone  = badKeys.filter(k  => this.bad[k]).length;
 
-  // Custom habit contribution
   const customGoodTotal = (this.customHabits || []).filter(h => h.type === 'good').length;
   const customBadTotal  = (this.customHabits || []).filter(h => h.type === 'bad').length;
   const customGoodDone  = (this.customHabits || []).filter(h => h.type === 'good' && h.completed).length;
