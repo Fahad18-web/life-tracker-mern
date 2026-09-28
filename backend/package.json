@@ -1,5 +1,5 @@
 {
-  "name": "life-tracker-server",
+  "name": "life-tracker-backend",
   "version": "1.0.0",
   "description": "Life Tracker SaaS — Express/MongoDB API",
   "main": "server.js",

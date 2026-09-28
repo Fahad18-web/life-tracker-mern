@@ -36,8 +36,8 @@ Built with the MERN stack. Designed for consistency, not clutter.
 
 ```text
 life-tracker-mern/
-├── client/          # React (Vite) app
-├── server/          # Express API
+├── frontend/          # React (Vite) app
+├── backend/          # Express API
 ├── docs/
 │   ├── screenshots/
 │   └── USER_GUIDE.md
