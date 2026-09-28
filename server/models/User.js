@@ -1,5 +1,5 @@
-const mongoose  = require('mongoose');
-const bcrypt    = require('bcryptjs');
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 const validator = require('validator');
 
 const UserSchema = new mongoose.Schema({
@@ -26,11 +26,20 @@ const UserSchema = new mongoose.Schema({
     default: 'Asia/Karachi'
   },
   subscription: {
-    plan:       { type: String, enum: ['free', 'pro'], default: 'free' },
+    plan: { type: String, enum: ['free', 'pro'], default: 'free' },
     validUntil: { type: Date }
   },
   preferences: {
-    theme:        { type: String, enum: ['dark', 'light'], default: 'dark' },
+    theme: {
+      type: String,
+      enum: ['dark', 'light'],
+      default: 'dark'
+    },
+    themePreset: {
+      type: String,
+      enum: ['teal', 'ocean', 'sunset', 'forest', 'violet'],
+      default: 'teal'
+    },
     customHabits: {
       type: [{
         key: { type: String, required: true },

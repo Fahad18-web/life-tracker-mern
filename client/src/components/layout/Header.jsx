@@ -14,7 +14,8 @@ import {
   LogOut,
   Menu,
   X,
-  User
+  User,
+  Settings
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -64,8 +65,16 @@ export default function Header() {
   };
 
   const initials = user?.name
-    ? user.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
+    ? user.name
+        .split(' ')
+        .map((n) => n[0])
+        .join('')
+        .slice(0, 2)
+        .toUpperCase()
     : 'U';
+
+  const iconBtn =
+    'inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--color-border)] text-[var(--color-text-secondary)] transition hover:bg-[var(--color-surface)] hover:text-[var(--color-text)]';
 
   return (
     <>
@@ -109,7 +118,7 @@ export default function Header() {
             <button
               type="button"
               onClick={() => navigate('/log')}
-              className="relative inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--color-border)] text-[var(--color-text-secondary)] transition hover:bg-[var(--color-surface)] hover:text-[var(--color-text)]"
+              className={`relative ${iconBtn}`}
               aria-label="Notifications"
             >
               <Bell className="h-4 w-4" />
@@ -121,11 +130,16 @@ export default function Header() {
             <button
               type="button"
               onClick={toggleTheme}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--color-border)] text-[var(--color-text-secondary)] transition hover:bg-[var(--color-surface)] hover:text-[var(--color-text)]"
+              className={iconBtn}
               aria-label="Toggle theme"
             >
               {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
+
+            {/* Settings */}
+            <Link to="/settings" className={iconBtn} aria-label="Settings">
+              <Settings className="h-4 w-4" />
+            </Link>
 
             <Link
               to="/profile"
@@ -150,7 +164,7 @@ export default function Header() {
             <button
               type="button"
               onClick={toggleTheme}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--color-border)] text-[var(--color-text-secondary)]"
+              className={iconBtn}
               aria-label="Toggle theme"
             >
               {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
@@ -223,6 +237,18 @@ export default function Header() {
                   </Link>
                 );
               })}
+
+              <Link
+                to="/settings"
+                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium no-underline transition ${
+                  pathname === '/settings'
+                    ? 'bg-[var(--color-surface-2)] text-[var(--color-text)]'
+                    : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg)] hover:text-[var(--color-text)]'
+                }`}
+              >
+                <Settings className="h-4 w-4" />
+                Settings
+              </Link>
 
               {hasPendingLog && (
                 <button

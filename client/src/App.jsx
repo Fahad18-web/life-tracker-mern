@@ -19,6 +19,7 @@ const ManageHabits = lazy(() => import('./pages/ManageHabits'));
 const Profile = lazy(() => import('./pages/Profile'));
 const HabitReplacementPage = lazy(() => import('./pages/HabitReplacementPage'));
 const LandingPage = lazy(() => import('./pages/LandingPage'));
+const Settings = lazy(() => import('./pages/Settings'));
 
 function InnerProviders({ children }) {
   return <NotificationProvider>{children}</NotificationProvider>;
@@ -86,6 +87,7 @@ export default function App() {
                 <Route path="/habits" element={<ProtectedRoute><AppLayout><ManageHabits /></AppLayout></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><AppLayout><Profile /></AppLayout></ProtectedRoute>} />
                 <Route path="/replacements" element={<ProtectedRoute><AppLayout><HabitReplacementPage /></AppLayout></ProtectedRoute>} />
+                <Route path="/settings" element={<ProtectedRoute><AppLayout><Settings /></AppLayout></ProtectedRoute>} />
 
                 {/* Fallback */}
                 <Route path="*" element={<Navigate to="/" replace />} />

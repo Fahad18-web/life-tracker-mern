@@ -1,11 +1,14 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { loginUser, registerUser, getProfile } from '../api/authAPI';
 import toast from 'react-hot-toast';
+import { useTheme } from './ThemeContext';
 
 const AuthContext = createContext(null);
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
+  const { applyFromPreferences } = useTheme();
+
   const [user, setUser] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('lt_user')) || null;
@@ -27,6 +30,9 @@ export const AuthProvider = ({ children }) => {
       .then((res) => {
         setUser(res.data.user);
         localStorage.setItem('lt_user', JSON.stringify(res.data.user));
+        if (res.data.user?.preferences) {
+          applyFromPreferences(res.data.user.preferences);
+        }
       })
       .catch(() => {
         localStorage.removeItem('lt_token');
@@ -34,13 +40,16 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [applyFromPreferences]);
 
   const login = async (email, password) => {
     const res = await loginUser({ email, password });
     localStorage.setItem('lt_token', res.data.token);
     localStorage.setItem('lt_user', JSON.stringify(res.data.user));
     setUser(res.data.user);
+    if (res.data.user?.preferences) {
+      applyFromPreferences(res.data.user.preferences);
+    }
     toast.success(`Welcome back, ${res.data.user.name}! 🌿`);
   };
 
@@ -49,6 +58,9 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('lt_token', res.data.token);
     localStorage.setItem('lt_user', JSON.stringify(res.data.user));
     setUser(res.data.user);
+    if (res.data.user?.preferences) {
+      applyFromPreferences(res.data.user.preferences);
+    }
     toast.success(`Account created! Welcome, ${res.data.user.name} 🎉`);
   };
 
@@ -59,7 +71,6 @@ export const AuthProvider = ({ children }) => {
     toast('Logged out successfully', { icon: '👋' });
   };
 
-  // Profile update ke baad Header/name sync ke liye
   const updateUser = (nextUser) => {
     setUser(nextUser);
     localStorage.setItem('lt_user', JSON.stringify(nextUser));

@@ -49,9 +49,25 @@ class AuthService {
     };
   }
 
-  async updatePreferences(userId, updates) {
+   async updatePreferences(userId, updates) {
+    const allowed = {};
+
+    if (updates.theme !== undefined) {
+      if (!['dark', 'light'].includes(updates.theme)) {
+        throw new AppError('Invalid theme. Use dark or light.', 400);
+      }
+      allowed.theme = updates.theme;
+    }
+
+    if (updates.themePreset !== undefined) {
+      if (!['teal', 'ocean', 'sunset', 'forest', 'violet'].includes(updates.themePreset)) {
+        throw new AppError('Invalid theme preset.', 400);
+      }
+      allowed.themePreset = updates.themePreset;
+    }
+
     if (Array.isArray(updates.customHabits)) {
-      updates.customHabits = updates.customHabits
+      allowed.customHabits = updates.customHabits
         .map((habit, index) => ({
           key: normalizeHabitName(habit.key || habit.name || `custom-${index}`)
             .toLowerCase()
@@ -70,7 +86,7 @@ class AuthService {
 
     const user = await User.findByIdAndUpdate(
       userId,
-      { preferences: { ...currentUser.preferences.toObject(), ...updates } },
+      { preferences: { ...currentUser.preferences.toObject(), ...allowed } },
       { new: true, runValidators: true }
     );
 
