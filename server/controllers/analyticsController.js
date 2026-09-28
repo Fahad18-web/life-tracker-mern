@@ -28,4 +28,14 @@ const getStreaks = async (req, res, next) => {
   }
 };
 
-module.exports = { getWeekly, getMonthly, getStreaks };
+const getReport = async (req, res, next) => {
+  try {
+    const range = (req.query.range || 'week').toLowerCase();
+    const result = await analyticsService.getReport(req.user._id, range);
+    return success(res, result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { getWeekly, getMonthly, getStreaks, getReport };

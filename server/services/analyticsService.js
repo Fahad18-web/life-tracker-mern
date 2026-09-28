@@ -87,6 +87,8 @@ class AnalyticsService {
       streaks[habit] = streak;
     });
 
+
+
     // Custom habit streaks
     const customStreaks = {};
     const customHabitMeta = {};
@@ -150,6 +152,166 @@ class AnalyticsService {
 
     return { streaks, customStreaks, overallStreak };
   }
+   
+    /**
+   * Performance report — range: week | month | year
+   * Year returns monthly aggregates (scalable chart series).
+   */
+  async getReport(userId, range = 'week') {
+    const allowed = ['week', 'month', 'year'];
+    if (!allowed.includes(range)) {
+      const AppError = require('../utils/AppError');
+      throw new AppError('Invalid range. Use week, month, or year.', 400);
+    }
+
+    const today = new Date();
+    const toStr = today.toISOString().split('T')[0];
+
+    let from = new Date(today);
+    if (range === 'week') from.setDate(from.getDate() - 6);
+    else if (range === 'month') from.setDate(from.getDate() - 29);
+    else from.setFullYear(from.getFullYear() - 1);
+
+    const fromStr = from.toISOString().split('T')[0];
+
+    const entries = await Entry.find({
+      userId,
+      date: { $gte: fromStr, $lte: toStr }
+    })
+      .select('date netScore mood grade')
+      .sort({ date: 1 })
+      .lean();
+
+    const summary = this._buildSummary(entries, fromStr, toStr, range);
+    const series =
+      range === 'year'
+        ? this._monthlySeries(entries, from, today)
+        : this._dailySeries(entries, fromStr, toStr, range);
+
+    return {
+      range,
+      from: fromStr,
+      to: toStr,
+      summary,
+      series
+    };
+  }
+
+  _buildSummary(entries, fromStr, toStr, range) {
+    const totalLogged = entries.length;
+
+    // Expected days in window (approx for consistency)
+    let expectedDays = 7;
+    if (range === 'month') expectedDays = 30;
+    if (range === 'year') expectedDays = 365;
+
+    const avgScore = totalLogged
+      ? Math.round(entries.reduce((s, e) => s + (e.netScore || 0), 0) / totalLogged)
+      : 0;
+
+    const avgMood = totalLogged
+      ? Number(
+          (entries.reduce((s, e) => s + (e.mood || 0), 0) / totalLogged).toFixed(1)
+        )
+      : 0;
+
+    const best = entries.reduce(
+      (a, b) => ((a?.netScore || 0) >= (b?.netScore || 0) ? a : b),
+      entries[0]
+    );
+
+    const gradeCounts = { A: 0, B: 0, C: 0, D: 0, F: 0 };
+    for (const e of entries) {
+      if (e.grade && gradeCounts[e.grade] !== undefined) {
+        gradeCounts[e.grade]++;
+      }
+    }
+
+    const consistencyPct = expectedDays
+      ? Math.min(100, Math.round((totalLogged / expectedDays) * 100))
+      : 0;
+
+    return {
+      avgScore,
+      avgMood,
+      bestDay: best?.date || null,
+      bestScore: best?.netScore ?? null,
+      totalEntries: totalLogged,
+      consistencyPct,
+      gradeCounts
+    };
+  }
+
+  _dailySeries(entries, fromStr, toStr, range) {
+    const map = Object.fromEntries(entries.map((e) => [e.date, e]));
+    const days = [];
+    const start = new Date(fromStr + 'T12:00:00');
+    const end = new Date(toStr + 'T12:00:00');
+    const cursor = new Date(start);
+
+    while (cursor <= end) {
+      const date = cursor.toISOString().split('T')[0];
+      const e = map[date];
+      days.push({
+        date,
+        label:
+          range === 'week'
+            ? cursor.toLocaleDateString('en', { weekday: 'short' })
+            : cursor.toLocaleDateString('en', { month: 'short', day: 'numeric' }),
+        netScore: e?.netScore ?? null,
+        mood: e?.mood ?? null,
+        grade: e?.grade ?? null
+      });
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    return days;
+  }
+
+  _monthlySeries(entries, fromDate, toDate) {
+    // Group by YYYY-MM
+    const buckets = {};
+    for (const e of entries) {
+      const key = e.date.slice(0, 7); // YYYY-MM
+      if (!buckets[key]) buckets[key] = [];
+      buckets[key].push(e);
+    }
+
+    const series = [];
+    const cursor = new Date(fromDate.getFullYear(), fromDate.getMonth(), 1);
+    const end = new Date(toDate.getFullYear(), toDate.getMonth(), 1);
+
+    while (cursor <= end) {
+      const y = cursor.getFullYear();
+      const m = String(cursor.getMonth() + 1).padStart(2, '0');
+      const key = `${y}-${m}`;
+      const list = buckets[key] || [];
+
+      const avgScore = list.length
+        ? Math.round(list.reduce((s, e) => s + (e.netScore || 0), 0) / list.length)
+        : null;
+      const avgMood = list.length
+        ? Number(
+            (list.reduce((s, e) => s + (e.mood || 0), 0) / list.length).toFixed(1)
+          )
+        : null;
+
+      series.push({
+        date: `${key}-01`,
+        label: cursor.toLocaleDateString('en', { month: 'short', year: '2-digit' }),
+        netScore: avgScore,
+        mood: avgMood,
+        grade: null,
+        entryCount: list.length
+      });
+
+      cursor.setMonth(cursor.getMonth() + 1);
+    }
+
+    return series;
+  }
+
 }
+
+
 
 module.exports = new AnalyticsService();
