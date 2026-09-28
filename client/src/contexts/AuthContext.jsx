@@ -59,8 +59,16 @@ export const AuthProvider = ({ children }) => {
     toast('Logged out successfully', { icon: '👋' });
   };
 
+  // Profile update ke baad Header/name sync ke liye
+  const updateUser = (nextUser) => {
+    setUser(nextUser);
+    localStorage.setItem('lt_user', JSON.stringify(nextUser));
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider
+      value={{ user, loading, login, register, logout, updateUser }}
+    >
       {children}
     </AuthContext.Provider>
   );

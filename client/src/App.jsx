@@ -1,29 +1,27 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { Toaster }               from 'react-hot-toast';
-import { AuthProvider }          from './contexts/AuthContext';
-import { ThemeProvider }         from './contexts/ThemeContext';
-import { NotificationProvider }  from './contexts/NotificationContext';
-import ProtectedRoute            from './components/ui/ProtectedRoute';
-import Header                    from './components/layout/Header';
-import NotificationBanner        from './components/ui/NotificationBanner';
-import Login                     from './pages/auth/Login';
-import Register                  from './pages/auth/Register';
-import Dashboard                 from './pages/Dashboard';
-import Log                       from './pages/Log';
-import History                   from './pages/History';
-import Trends                    from './pages/Trends';
-import ManageHabits              from './pages/ManageHabits';
-import Profile                   from './pages/Profile';
-import HabitReplacementPage      from './pages/HabitReplacementPage';
-import LandingPage               from './pages/LandingPage';
+import { Toaster } from 'react-hot-toast';
+import { AuthProvider } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
+import { NotificationProvider } from './contexts/NotificationContext';
+import ProtectedRoute from './components/ui/ProtectedRoute';
+import Header from './components/layout/Header';
+import NotificationBanner from './components/ui/NotificationBanner';
 
-// NotificationProvider needs to be inside AuthProvider (uses useAuth internally)
+// Lazy load pages
+const Login = lazy(() => import('./pages/auth/Login'));
+const Register = lazy(() => import('./pages/auth/Register'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Log = lazy(() => import('./pages/Log'));
+const History = lazy(() => import('./pages/History'));
+const Trends = lazy(() => import('./pages/Trends'));
+const ManageHabits = lazy(() => import('./pages/ManageHabits'));
+const Profile = lazy(() => import('./pages/Profile'));
+const HabitReplacementPage = lazy(() => import('./pages/HabitReplacementPage'));
+const LandingPage = lazy(() => import('./pages/LandingPage'));
+
 function InnerProviders({ children }) {
-  return (
-    <NotificationProvider>
-      {children}
-    </NotificationProvider>
-  );
+  return <NotificationProvider>{children}</NotificationProvider>;
 }
 
 function AppLayout({ children }) {
@@ -31,9 +29,15 @@ function AppLayout({ children }) {
     <>
       <Header />
       <NotificationBanner />
-      <div className="content-wrapper">{children}</div>
+      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
+        {children}
+      </div>
     </>
   );
+}
+
+function PageLoader() {
+  return <div className="page-loader">Loading…</div>;
 }
 
 export default function App() {
@@ -46,32 +50,47 @@ export default function App() {
               position="top-right"
               toastOptions={{
                 style: {
-                  background: 'var(--bg-card)',
-                  color:      'var(--text-primary)',
-                  border:     '1px solid var(--border)',
-                  fontFamily: 'var(--font)',
-                  fontSize:   '14px',
+                  background: 'var(--color-surface)',
+                  color: 'var(--color-text)',
+                  border: '1px solid var(--color-border)',
+                  fontFamily: 'var(--font-sans)',
+                  fontSize: '14px',
+                  boxShadow: '0 8px 30px rgba(0,0,0,0.25)',
+                },
+                success: {
+                  iconTheme: {
+                    primary: 'var(--color-success)',
+                    secondary: 'var(--color-surface)',
+                  },
+                },
+                error: {
+                  iconTheme: {
+                    primary: 'var(--color-danger)',
+                    secondary: 'var(--color-surface)',
+                  },
                 },
               }}
             />
-            <Routes>
-              {/* Public */}
-              <Route path="/"         element={<LandingPage />} />
-              <Route path="/login"    element={<Login />} />
-              <Route path="/register" element={<Register />} />
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
+                {/* Public */}
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
 
-              {/* Protected */}
-              <Route path="/dashboard" element={<ProtectedRoute><AppLayout><Dashboard /></AppLayout></ProtectedRoute>} />
-              <Route path="/log"       element={<ProtectedRoute><AppLayout><Log /></AppLayout></ProtectedRoute>} />
-              <Route path="/history"   element={<ProtectedRoute><AppLayout><History /></AppLayout></ProtectedRoute>} />
-              <Route path="/trends"    element={<ProtectedRoute><AppLayout><Trends /></AppLayout></ProtectedRoute>} />
-              <Route path="/habits"    element={<ProtectedRoute><AppLayout><ManageHabits /></AppLayout></ProtectedRoute>} />
-              <Route path="/profile"      element={<ProtectedRoute><AppLayout><Profile /></AppLayout></ProtectedRoute>} />
-              <Route path="/replacements" element={<ProtectedRoute><AppLayout><HabitReplacementPage /></AppLayout></ProtectedRoute>} />
+                {/* Protected */}
+                <Route path="/dashboard" element={<ProtectedRoute><AppLayout><Dashboard /></AppLayout></ProtectedRoute>} />
+                <Route path="/log" element={<ProtectedRoute><AppLayout><Log /></AppLayout></ProtectedRoute>} />
+                <Route path="/history" element={<ProtectedRoute><AppLayout><History /></AppLayout></ProtectedRoute>} />
+                <Route path="/trends" element={<ProtectedRoute><AppLayout><Trends /></AppLayout></ProtectedRoute>} />
+                <Route path="/habits" element={<ProtectedRoute><AppLayout><ManageHabits /></AppLayout></ProtectedRoute>} />
+                <Route path="/profile" element={<ProtectedRoute><AppLayout><Profile /></AppLayout></ProtectedRoute>} />
+                <Route path="/replacements" element={<ProtectedRoute><AppLayout><HabitReplacementPage /></AppLayout></ProtectedRoute>} />
 
-              {/* Fallback */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+                {/* Fallback */}
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </Suspense>
           </BrowserRouter>
         </InnerProviders>
       </AuthProvider>

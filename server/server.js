@@ -10,6 +10,11 @@ connectDB();
 
 const app = express();
 
+// Production reverse proxy (Render / Railway / Nginx)
+if (config.isProd) {
+  app.set('trust proxy', 1);
+}
+
 // Security middlewares
 app.use(securityMiddleware);
 
@@ -40,6 +45,18 @@ app.get('/', (req, res) => {
   res.json({
     message: '🌿 Life Tracker API is running',
     env: config.env
+  });
+});
+
+app.get('/api/health', (req, res) => {
+  res.json({ success: true, ok: true, env: config.env });
+});
+
+// 404 for unknown routes
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: `Route not found: ${req.method} ${req.originalUrl}`
   });
 });
 
