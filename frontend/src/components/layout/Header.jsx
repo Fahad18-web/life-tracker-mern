@@ -20,6 +20,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useNotification } from '../../contexts/NotificationContext';
+import Avatar from '../Avatar';
 
 const NAV = [
   { path: '/dashboard', label: 'Overview', icon: LayoutDashboard },
@@ -27,7 +28,7 @@ const NAV = [
   { path: '/history', label: 'History', icon: CalendarDays },
   { path: '/trends', label: 'Trends', icon: TrendingUp },
   { path: '/habits', label: 'Habits', icon: Settings2 },
-  { path: '/replacements', label: 'Replace', icon: RefreshCw },
+  { path: '/replacements', label: 'Replace', icon: RefreshCw }
 ];
 
 export default function Header() {
@@ -64,15 +65,6 @@ export default function Header() {
     navigate('/login');
   };
 
-  const initials = user?.name
-    ? user.name
-        .split(' ')
-        .map((n) => n[0])
-        .join('')
-        .slice(0, 2)
-        .toUpperCase()
-    : 'U';
-
   const iconBtn =
     'inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--color-border)] text-[var(--color-text-secondary)] transition hover:bg-[var(--color-surface)] hover:text-[var(--color-text)]';
 
@@ -80,7 +72,6 @@ export default function Header() {
     <>
       <header className="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-bg)]/85 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4 sm:px-6">
-          {/* Logo */}
           <Link
             to="/dashboard"
             className="flex items-center gap-2 text-[var(--color-text)] no-underline"
@@ -93,7 +84,6 @@ export default function Header() {
             </span>
           </Link>
 
-          {/* Desktop nav */}
           <nav className="ml-4 hidden items-center gap-1 md:flex">
             {NAV.map(({ path, label }) => {
               const active = pathname === path;
@@ -113,7 +103,6 @@ export default function Header() {
             })}
           </nav>
 
-          {/* Desktop actions */}
           <div className="ml-auto hidden items-center gap-2 md:flex">
             <button
               type="button"
@@ -136,17 +125,16 @@ export default function Header() {
               {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
 
-            {/* Settings */}
             <Link to="/settings" className={iconBtn} aria-label="Settings">
               <Settings className="h-4 w-4" />
             </Link>
 
             <Link
               to="/profile"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--color-brand-500)] bg-[var(--color-brand-600)]/15 text-xs font-bold text-[var(--color-brand-400)] no-underline transition hover:scale-105"
+              className="inline-flex rounded-full no-underline transition hover:scale-105"
               title={user?.name || 'Profile'}
             >
-              {initials}
+              <Avatar avatar={user?.avatar} name={user?.name} size={36} />
             </Link>
 
             <button
@@ -159,7 +147,6 @@ export default function Header() {
             </button>
           </div>
 
-          {/* Mobile actions */}
           <div className="ml-auto flex items-center gap-2 md:hidden">
             <button
               type="button"
@@ -181,7 +168,6 @@ export default function Header() {
         </div>
       </header>
 
-      {/* Mobile drawer */}
       {menuOpen && (
         <>
           <div
@@ -205,9 +191,7 @@ export default function Header() {
               to="/profile"
               className="flex items-center gap-3 border-b border-[var(--color-border)] px-4 py-3 no-underline"
             >
-              <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--color-brand-500)] bg-[var(--color-brand-600)]/15 text-xs font-bold text-[var(--color-brand-400)]">
-                {initials}
-              </span>
+              <Avatar avatar={user?.avatar} name={user?.name} size={36} />
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-[var(--color-text)]">
                   {user?.name || 'User'}

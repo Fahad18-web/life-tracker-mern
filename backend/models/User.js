@@ -25,6 +25,12 @@ const UserSchema = new mongoose.Schema({
     type: String,
     default: 'Asia/Karachi'
   },
+  avatar: {
+    type: String,
+    default: null,
+    maxlength: [32, 'Avatar id too long'],
+    trim: true
+  },
   subscription: {
     plan: { type: String, enum: ['free', 'pro'], default: 'free' },
     validUntil: { type: Date }

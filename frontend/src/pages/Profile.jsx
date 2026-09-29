@@ -4,6 +4,8 @@ import toast from 'react-hot-toast';
 import { Eye, EyeOff, User, Lock, Trash2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchProfile, updateProfile, changePassword, deleteAccount } from '../api/userAPI';
+import Avatar from '../components/Avatar';
+import { AVATAR_PRESETS } from '../config/avatarPresets';
 
 const GRADE_COLORS = {
   A: '#22c55e',
@@ -56,14 +58,28 @@ export default function Profile() {
     load();
   }, []);
 
+  const syncUser = (userPayload) => {
+    setProfile((p) => ({ ...p, ...userPayload }));
+    if (updateUser) updateUser(userPayload);
+  };
+
+  const handleAvatarSelect = async (avatarId) => {
+    try {
+      const res = await updateProfile({ avatar: avatarId });
+      syncUser(res.data.user);
+      toast.success(avatarId ? 'Avatar updated' : 'Avatar cleared');
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Could not update avatar');
+    }
+  };
+
   const handleEditSave = async (e) => {
     e.preventDefault();
     if (!editForm.name.trim()) return toast.error('Name cannot be empty.');
     setEditSaving(true);
     try {
       const res = await updateProfile(editForm);
-      setProfile(res.data.user);
-      if (updateUser) updateUser(res.data.user);
+      syncUser(res.data.user);
       toast.success('Profile updated!');
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Update failed.');
@@ -141,14 +157,55 @@ export default function Profile() {
       </div>
 
       {/* Avatar card */}
-      <div className="flex items-center gap-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-[var(--color-brand-500)] bg-[var(--color-brand-600)]/15 text-2xl font-bold text-[var(--color-brand-400)]">
-          {initials}
+      <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
+        <div className="flex items-center gap-4">
+          <Avatar avatar={profile?.avatar} name={profile?.name} size={64} />
+          <div>
+            <p className="text-lg font-semibold text-[var(--color-text)]">{profile?.name}</p>
+            <p className="text-sm text-[var(--color-text-secondary)]">{profile?.email}</p>
+            <p className="mt-0.5 text-xs text-[var(--color-text-muted)]">
+              Member since {joinedDate}
+            </p>
+          </div>
         </div>
-        <div>
-          <p className="text-lg font-semibold text-[var(--color-text)]">{profile?.name}</p>
-          <p className="text-sm text-[var(--color-text-secondary)]">{profile?.email}</p>
-          <p className="mt-0.5 text-xs text-[var(--color-text-muted)]">Member since {joinedDate}</p>
+
+        <div className="mt-4">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
+            Choose avatar
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              title="Use initials"
+              onClick={() => handleAvatarSelect(null)}
+              className={`flex h-11 w-11 items-center justify-center rounded-full border text-xs font-bold transition ${
+                !profile?.avatar
+                  ? 'border-[var(--color-brand-500)] bg-[var(--color-brand-600)]/15 text-[var(--color-brand-400)]'
+                  : 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-border-hover)]'
+              }`}
+            >
+              {initials}
+            </button>
+
+            {AVATAR_PRESETS.map((p) => {
+              const active = profile?.avatar === p.id;
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  title={p.label}
+                  onClick={() => handleAvatarSelect(p.id)}
+                  className={`rounded-full border p-0.5 transition ${
+                    active
+                      ? 'border-[var(--color-brand-500)] ring-2 ring-[var(--color-brand-500)]/40'
+                      : 'border-[var(--color-border)] hover:border-[var(--color-border-hover)]'
+                  }`}
+                >
+                  <Avatar avatar={p.id} name={p.label} size={40} />
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -216,7 +273,6 @@ export default function Profile() {
       )}
 
       <div className="grid gap-4 lg:grid-cols-2">
-        {/* Edit profile */}
         <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
           <h2 className="mb-4 text-sm font-semibold text-[var(--color-text)]">Edit Profile</h2>
           <form onSubmit={handleEditSave} className="space-y-4">
@@ -259,7 +315,6 @@ export default function Profile() {
           </form>
         </section>
 
-        {/* Change password */}
         <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
           <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-[var(--color-text)]">
             <Lock className="h-4 w-4" /> Change Password
@@ -312,7 +367,6 @@ export default function Profile() {
         </section>
       </div>
 
-      {/* Danger zone */}
       <section className="rounded-2xl border border-[var(--color-danger)]/30 bg-[var(--color-danger)]/5 p-5">
         <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold text-[var(--color-danger)]">
           <Trash2 className="h-4 w-4" /> Danger Zone
@@ -336,12 +390,12 @@ export default function Profile() {
               placeholder="Enter password to confirm"
               value={deletePass}
               onChange={(e) => setDeletePass(e.target.value)}
-              className={`${inputClass} sm:max-w-xs`}
+              className={inputClass}
             />
             <button
               type="button"
-              onClick={handleDelete}
               disabled={deleteLoading}
+              onClick={handleDelete}
               className="rounded-xl bg-[var(--color-danger)] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
             >
               {deleteLoading ? 'Deleting…' : 'Confirm Delete'}
@@ -352,7 +406,7 @@ export default function Profile() {
                 setDeleteConfirm(false);
                 setDeletePass('');
               }}
-              className="text-sm text-[var(--color-text-muted)]"
+              className="rounded-xl border border-[var(--color-border)] px-4 py-2.5 text-sm font-semibold text-[var(--color-text-secondary)]"
             >
               Cancel
             </button>
