@@ -31,6 +31,19 @@ const UserSchema = new mongoose.Schema({
     maxlength: [32, 'Avatar id too long'],
     trim: true
   },
+    emailVerified: {
+    type: Boolean,
+    default: false
+  },
+  emailVerificationToken: {
+    type: String,
+    select: false
+  },
+  emailVerificationExpires: {
+    type: Date,
+    select: false
+  },
+
   subscription: {
     plan: { type: String, enum: ['free', 'pro'], default: 'free' },
     validUntil: { type: Date }

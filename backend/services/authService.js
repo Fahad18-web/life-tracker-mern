@@ -2,6 +2,8 @@ const User = require('../models/User');
 const generateToken = require('../utils/generateToken');
 const { normalizeHabitName } = require('../utils/habitCatalog');
 const AppError = require('../utils/AppError');
+const { createEmailToken, hashEmailToken } = require('../utils/emailToken');
+const { sendVerificationEmail } = require('./emailService');
 
 function publicUser(user) {
   return {
@@ -9,8 +11,13 @@ function publicUser(user) {
     name: user.name,
     email: user.email,
     avatar: user.avatar || null,
+    emailVerified: Boolean(user.emailVerified),
     preferences: user.preferences
   };
+}
+
+function clientBaseUrl() {
+  return (process.env.CLIENT_URL || 'http://localhost:5173').replace(/\/$/, '');
 }
 
 class AuthService {
@@ -19,12 +26,35 @@ class AuthService {
       throw new AppError('Please provide name, email and password', 400);
     }
 
+    const existing = await User.findOne({ email: email.toLowerCase() });
+    if (existing) {
+      throw new AppError('Email already registered', 400);
+    }
+
+    const { raw, hash, expires } = createEmailToken();
+
     const user = await User.create({
       name,
       email,
       passwordHash: password,
-      timezone: timezone || 'Asia/Karachi'
+      timezone: timezone || 'Asia/Karachi',
+      emailVerified: false,
+      emailVerificationToken: hash,
+      emailVerificationExpires: expires
     });
+
+    const verifyUrl = `${clientBaseUrl()}/verify-email?token=${raw}`;
+
+    try {
+      await sendVerificationEmail({
+        to: user.email,
+        name: user.name,
+        verifyUrl
+      });
+    } catch (err) {
+      console.error('[auth] verification email failed:', err.message);
+      // Account still created — user can resend
+    }
 
     return {
       token: generateToken(user._id),
@@ -47,6 +77,54 @@ class AuthService {
       token: generateToken(user._id),
       user: publicUser(user)
     };
+  }
+
+  async verifyEmail(rawToken) {
+    if (!rawToken || typeof rawToken !== 'string') {
+      throw new AppError('Invalid or missing token', 400);
+    }
+
+    const hash = hashEmailToken(rawToken.trim());
+    const user = await User.findOne({
+      emailVerificationToken: hash,
+      emailVerificationExpires: { $gt: new Date() }
+    }).select('+emailVerificationToken +emailVerificationExpires');
+
+    if (!user) {
+      throw new AppError('Invalid or expired verification link', 400);
+    }
+
+    user.emailVerified = true;
+    user.emailVerificationToken = undefined;
+    user.emailVerificationExpires = undefined;
+    await user.save();
+
+    return publicUser(user);
+  }
+
+  async resendVerification(userId) {
+    const user = await User.findById(userId).select(
+      '+emailVerificationToken +emailVerificationExpires'
+    );
+    if (!user) throw new AppError('User not found', 404);
+
+    if (user.emailVerified) {
+      throw new AppError('Email is already verified', 400);
+    }
+
+    const { raw, hash, expires } = createEmailToken();
+    user.emailVerificationToken = hash;
+    user.emailVerificationExpires = expires;
+    await user.save();
+
+    const verifyUrl = `${clientBaseUrl()}/verify-email?token=${raw}`;
+    await sendVerificationEmail({
+      to: user.email,
+      name: user.name,
+      verifyUrl
+    });
+
+    return { message: 'Verification email sent' };
   }
 
   async updatePreferences(userId, updates) {
@@ -79,10 +157,7 @@ class AuthService {
     }
 
     const currentUser = await User.findById(userId).select('preferences');
-
-    if (!currentUser) {
-      throw new AppError('User not found', 404);
-    }
+    if (!currentUser) throw new AppError('User not found', 404);
 
     const user = await User.findByIdAndUpdate(
       userId,

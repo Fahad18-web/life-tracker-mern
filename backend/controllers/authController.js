@@ -20,7 +20,16 @@ const login = async (req, res, next) => {
 };
 
 const getMe = async (req, res) => {
-  return success(res, { user: req.user });
+  return success(res, {
+    user: {
+      id: req.user._id,
+      name: req.user.name,
+      email: req.user.email,
+      avatar: req.user.avatar || null,
+      emailVerified: Boolean(req.user.emailVerified),
+      preferences: req.user.preferences
+    }
+  });
 };
 
 const updatePreferences = async (req, res, next) => {
@@ -32,4 +41,30 @@ const updatePreferences = async (req, res, next) => {
   }
 };
 
-module.exports = { register, login, getMe, updatePreferences };
+const verifyEmail = async (req, res, next) => {
+  try {
+    const token = req.body.token || req.query.token;
+    const user = await authService.verifyEmail(token);
+    return success(res, { user, message: 'Email verified successfully' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const resendVerification = async (req, res, next) => {
+  try {
+    const result = await authService.resendVerification(req.user._id);
+    return success(res, result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = {
+  register,
+  login,
+  getMe,
+  updatePreferences,
+  verifyEmail,
+  resendVerification
+};
