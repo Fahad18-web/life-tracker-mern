@@ -19,7 +19,7 @@ const UserSchema = new mongoose.Schema({
   passwordHash: {
     type: String,
     required: true,
-    select: false   // never returned in queries by default
+    select: false
   },
   timezone: {
     type: String,
@@ -57,14 +57,12 @@ const UserSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-// Hash password before save
 UserSchema.pre('save', async function (next) {
   if (!this.isModified('passwordHash')) return next();
   this.passwordHash = await bcrypt.hash(this.passwordHash, 12);
   next();
 });
 
-// Compare entered password with hash
 UserSchema.methods.comparePassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.passwordHash);
 };

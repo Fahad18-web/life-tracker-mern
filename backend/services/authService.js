@@ -3,6 +3,16 @@ const generateToken = require('../utils/generateToken');
 const { normalizeHabitName } = require('../utils/habitCatalog');
 const AppError = require('../utils/AppError');
 
+function publicUser(user) {
+  return {
+    id: user._id,
+    name: user.name,
+    email: user.email,
+    avatar: user.avatar || null,
+    preferences: user.preferences
+  };
+}
+
 class AuthService {
   async register({ name, email, password, timezone }) {
     if (!name || !email || !password) {
@@ -18,12 +28,7 @@ class AuthService {
 
     return {
       token: generateToken(user._id),
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        preferences: user.preferences
-      }
+      user: publicUser(user)
     };
   }
 
@@ -40,16 +45,11 @@ class AuthService {
 
     return {
       token: generateToken(user._id),
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        preferences: user.preferences
-      }
+      user: publicUser(user)
     };
   }
 
-   async updatePreferences(userId, updates) {
+  async updatePreferences(userId, updates) {
     const allowed = {};
 
     if (updates.theme !== undefined) {
