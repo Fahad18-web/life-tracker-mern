@@ -1,4 +1,5 @@
 const { body } = require('express-validator');
+const { MIN_LENGTH } = require('../utils/passwordPolicy');
 
 const registerValidation = [
   body('name')
@@ -14,7 +15,12 @@ const registerValidation = [
 
   body('password')
     .notEmpty().withMessage('Password is required')
-    .isLength({ min: 6 }).withMessage('Password must be at least 6 characters')
+    .isLength({ min: MIN_LENGTH })
+    .withMessage(`Password must be at least ${MIN_LENGTH} characters`)
+    .matches(/[a-zA-Z]/)
+    .withMessage('Password must include at least one letter')
+    .matches(/[0-9]/)
+    .withMessage('Password must include at least one number')
 ];
 
 const loginValidation = [

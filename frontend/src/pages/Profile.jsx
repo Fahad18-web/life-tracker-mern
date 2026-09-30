@@ -6,6 +6,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { fetchProfile, updateProfile, changePassword, deleteAccount } from '../api/userAPI';
 import Avatar from '../components/Avatar';
 import { AVATAR_PRESETS } from '../config/avatarPresets';
+import PasswordStrength from '../components/PasswordStrength';
+import { validatePassword } from '../utils/passwordStrength';
 
 const GRADE_COLORS = {
   A: '#22c55e',
@@ -93,8 +95,9 @@ export default function Profile() {
     if (passForm.newPassword !== passForm.confirmPassword) {
       return toast.error('New passwords do not match.');
     }
-    if (passForm.newPassword.length < 6) {
-      return toast.error('Password must be at least 6 characters.');
+    const policy = validatePassword(passForm.newPassword);
+    if (!policy.ok) {
+      return toast.error(policy.message);
     }
     setPassSaving(true);
     try {
@@ -222,11 +225,16 @@ export default function Profile() {
                 label: 'Best Score',
                 value: stats.bestScore,
                 sub: stats.bestDate
-                  ? new Date(stats.bestDate + 'T12:00:00').toLocaleDateString('en-PK', {
+                  ? new Date(stats.bestDay + 'T12:00:00').toLocaleDateString('en-PK', {
                       month: 'short',
                       day: 'numeric'
                     })
-                  : ''
+                  : stats.bestDate
+                    ? new Date(stats.bestDate + 'T12:00:00').toLocaleDateString('en-PK', {
+                        month: 'short',
+                        day: 'numeric'
+                      })
+                    : ''
               }
             ].map((s) => (
               <div
@@ -277,7 +285,10 @@ export default function Profile() {
           <h2 className="mb-4 text-sm font-semibold text-[var(--color-text)]">Edit Profile</h2>
           <form onSubmit={handleEditSave} className="space-y-4">
             <div>
-              <label htmlFor="profile-name" className="mb-1.5 block text-sm text-[var(--color-text-secondary)]">
+              <label
+                htmlFor="profile-name"
+                className="mb-1.5 block text-sm text-[var(--color-text-secondary)]"
+              >
                 Full Name
               </label>
               <input
@@ -292,7 +303,10 @@ export default function Profile() {
               />
             </div>
             <div>
-              <label htmlFor="profile-email" className="mb-1.5 block text-sm text-[var(--color-text-secondary)]">
+              <label
+                htmlFor="profile-email"
+                className="mb-1.5 block text-sm text-[var(--color-text-secondary)]"
+              >
                 Email
               </label>
               <input
@@ -341,7 +355,10 @@ export default function Profile() {
                     value={passForm[f.key]}
                     onChange={(e) => setPassForm((p) => ({ ...p, [f.key]: e.target.value }))}
                     className={`${inputClass} pr-11`}
-                    placeholder="••••••••"
+                    placeholder={f.key === 'newPassword' ? 'Min 8 characters' : '••••••••'}
+                    autoComplete={
+                      f.key === 'currentPassword' ? 'current-password' : 'new-password'
+                    }
                   />
                   <button
                     type="button"
@@ -351,9 +368,16 @@ export default function Profile() {
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]"
                     aria-label="Toggle password"
                   >
-                    {passVisible[f.vis] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {passVisible[f.vis] ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
                   </button>
                 </div>
+                {f.key === 'newPassword' && (
+                  <PasswordStrength password={passForm.newPassword} />
+                )}
               </div>
             ))}
             <button
@@ -372,7 +396,8 @@ export default function Profile() {
           <Trash2 className="h-4 w-4" /> Danger Zone
         </h2>
         <p className="mb-4 text-sm text-[var(--color-text-secondary)]">
-          Deleting your account permanently removes all entries, habits, and data. This cannot be undone.
+          Deleting your account permanently removes all entries, habits, and data. This cannot be
+          undone.
         </p>
 
         {!deleteConfirm ? (

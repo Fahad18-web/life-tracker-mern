@@ -2,6 +2,7 @@ const User = require('../models/User');
 const Entry = require('../models/Entry');
 const CustomHabit = require('../models/CustomHabit');
 const { isValidAvatar } = require('../config/avatarPresets');
+const { validatePassword } = require('../utils/passwordPolicy');
 
 const calcOverallStreak = (entries) => {
   if (!entries.length) return 0;
@@ -132,10 +133,12 @@ const changePassword = async (req, res, next) => {
         message: 'Both fields are required.'
       });
     }
-    if (newPassword.length < 6) {
+
+    const policy = validatePassword(newPassword);
+    if (!policy.ok) {
       return res.status(400).json({
         success: false,
-        message: 'New password must be at least 6 characters.'
+        message: policy.message
       });
     }
 
