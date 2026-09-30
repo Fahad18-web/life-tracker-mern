@@ -115,16 +115,17 @@ export default function LandingPage() {
     <div className="min-h-screen bg-[var(--color-bg)] text-[var(--color-text)]">
       {/* Nav */}
       <header
-        className={`fixed inset-x-0 top-0 z-50 transition ${scrolled
+        className={`fixed inset-x-0 top-0 z-50 transition ${
+          scrolled
             ? 'border-b border-[var(--color-border)] bg-[var(--color-bg)]/90 backdrop-blur-md'
             : 'bg-transparent'
-          }`}
+        }`}
       >
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
           <button
             type="button"
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            className="flex items-center gap-2 bg-transparent border-0 p-0 cursor-pointer"
+            className="flex cursor-pointer items-center gap-2 border-0 bg-transparent p-0"
           >
             <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--color-brand-600)]/15 text-[var(--color-brand-400)]">
               <Leaf className="h-4 w-4" />
@@ -134,11 +135,12 @@ export default function LandingPage() {
             </span>
           </button>
 
+          {/* Desktop */}
           <div className="hidden items-center gap-2 sm:flex">
             <button
               type="button"
               onClick={toggleTheme}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text)]"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--color-border)] text-[var(--color-text-secondary)] transition hover:text-[var(--color-text)]"
               aria-label="Toggle theme"
             >
               {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
@@ -146,56 +148,72 @@ export default function LandingPage() {
             <button
               type="button"
               onClick={() => go('/login')}
-              className="rounded-lg px-3 py-2 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text)]"
+              className="rounded-xl border border-[var(--color-border)] px-3.5 py-2 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-border-hover)] hover:bg-[var(--color-surface)]"
             >
               Sign in
             </button>
             <button
               type="button"
               onClick={() => go('/register')}
-              className="rounded-xl bg-[var(--color-brand-600)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-brand-500)]"
+              className="rounded-xl bg-[var(--color-brand-600)] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[var(--color-brand-500)]"
             >
               Get Started
             </button>
           </div>
 
+          {/* Mobile menu toggle */}
           <button
             type="button"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--color-border)] sm:hidden"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--color-border)] text-[var(--color-text)] sm:hidden"
             onClick={() => setMenuOpen((v) => !v)}
-            aria-label="Menu"
+            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={menuOpen}
           >
             {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
 
+        {/* Mobile drawer */}
         {menuOpen && (
-          <div className="border-t border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 sm:hidden">
-            <button
-              type="button"
-              onClick={toggleTheme}
-              className="mb-2 flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg)] hover:text-[var(--color-text)]"
+          <>
+            <div
+              className="fixed inset-0 top-14 z-40 bg-black/45 sm:hidden"
+              onClick={() => setMenuOpen(false)}
+              aria-hidden
+            />
+            <div
+              className="relative z-50 border-t border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-4 shadow-lg sm:hidden"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Menu"
             >
-              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-              <span>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
-            </button>
+              <button
+                type="button"
+                onClick={toggleTheme}
+                className="mb-3 flex w-full items-center gap-2.5 rounded-xl border border-[var(--color-border)] px-3 py-2.5 text-left text-sm font-medium text-[var(--color-text-secondary)] transition hover:bg-[var(--color-bg)] hover:text-[var(--color-text)]"
+              >
+                {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                <span>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
+              </button>
 
-            <button
-              type="button"
-              onClick={() => go('/login')}
-              className="mb-2 block w-full rounded-lg px-2 py-2 text-left text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg)] hover:text-[var(--color-text)]"
-            >
-              Sign in
-            </button>
-
-            <button
-              type="button"
-              onClick={() => go('/register')}
-              className="w-full rounded-xl bg-[var(--color-brand-600)] px-4 py-2.5 text-sm font-semibold text-white"
-            >
-              Get Started
-            </button>
-          </div>
+              <div className="flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() => go('/register')}
+                  className="w-full rounded-2xl bg-[var(--color-brand-600)] px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-[var(--color-brand-500)]"
+                >
+                  Get Started
+                </button>
+                <button
+                  type="button"
+                  onClick={() => go('/login')}
+                  className="w-full rounded-2xl border-2 border-[var(--color-brand-600)] bg-transparent px-4 py-3 text-center text-sm font-semibold text-[var(--color-brand-600)] transition hover:bg-[var(--color-brand-600)]/10 dark:border-[var(--color-brand-400)] dark:text-[var(--color-brand-400)]"
+                >
+                  Sign in
+                </button>
+              </div>
+            </div>
+          </>
         )}
       </header>
 
