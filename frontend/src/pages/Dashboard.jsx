@@ -6,11 +6,13 @@ import {
   TrendingUp,
   Trophy,
   ArrowRight,
-  RefreshCw
+  RefreshCw,
+  Lightbulb,
+  Medal
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchEntryDate } from '../api/entriesAPI';
-import { getWeekly, getMonthly, getStreaks } from '../api/analyticsAPI';
+import { getWeekly, getMonthly, getStreaks, getInsights } from '../api/analyticsAPI';
 import { fetchPairs } from '../api/habitReplacementAPI';
 
 const TODAY = () => new Date().toISOString().split('T')[0];
@@ -66,18 +68,22 @@ export default function Dashboard() {
   const [customStreaks, setCustomStreaks] = useState({});
   const [overallStreak, setOverallStreak] = useState(0);
   const [pairs, setPairs] = useState([]);
+  const [insight, setInsight] = useState(null);
+  const [records, setRecords] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [todayRes, weekRes, monthRes, streakRes, pairsRes] = await Promise.allSettled([
-          fetchEntryDate(TODAY()),
-          getWeekly(),
-          getMonthly(),
-          getStreaks(),
-          fetchPairs()
-        ]);
+        const [todayRes, weekRes, monthRes, streakRes, pairsRes, insightsRes] =
+          await Promise.allSettled([
+            fetchEntryDate(TODAY()),
+            getWeekly(),
+            getMonthly(),
+            getStreaks(),
+            fetchPairs(),
+            getInsights()
+          ]);
 
         if (todayRes.status === 'fulfilled') setToday(todayRes.value.data.entry);
         if (weekRes.status === 'fulfilled') setWeekly(weekRes.value.data.data || []);
@@ -89,6 +95,12 @@ export default function Dashboard() {
         }
         if (pairsRes.status === 'fulfilled') {
           setPairs(pairsRes.value.data.pairs || []);
+        }
+        if (insightsRes.status === 'fulfilled') {
+          const payload = insightsRes.value.data;
+          const body = payload?.data || payload;
+          setInsight(body.insight || null);
+          setRecords(body.records || null);
         }
       } finally {
         setLoading(false);
@@ -131,6 +143,95 @@ export default function Dashboard() {
           })}
         </p>
       </div>
+
+      {/* Weekly insight */}
+      {insight && (
+        <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
+          <div className="flex items-start gap-3">
+            <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--color-brand-600)]/15 text-[var(--color-brand-400)]">
+              <Lightbulb className="h-5 w-5" />
+            </span>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-brand-400)]">
+                {insight.title || 'Insight'}
+              </p>
+              <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                {insight.message}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Personal records */}
+      {records && records.totalEntries > 0 && (
+        <section>
+          <div className="mb-3 flex items-center gap-2">
+            <Medal className="h-4 w-4 text-[var(--color-brand-400)]" />
+            <h2 className="text-sm font-semibold text-[var(--color-text)]">
+              Personal records
+            </h2>
+          </div>
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
+                Longest streak
+              </p>
+              <p className="mt-2 font-display text-2xl font-semibold text-[var(--color-text)]">
+                {records.longestStreak}
+                <span className="ml-1 text-xs font-medium text-[var(--color-text-muted)]">
+                  days
+                </span>
+              </p>
+            </div>
+            <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
+                Best score
+              </p>
+              <p className="mt-2 font-display text-2xl font-semibold text-[var(--color-text)]">
+                {records.bestScore ?? '—'}
+              </p>
+              {records.bestScoreDate && (
+                <p className="mt-1 text-xs text-[var(--color-text-muted)]">
+                  {new Date(records.bestScoreDate + 'T12:00:00').toLocaleDateString(
+                    'en-PK',
+                    { month: 'short', day: 'numeric', year: 'numeric' }
+                  )}
+                </p>
+              )}
+            </div>
+            <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
+                Most habits / day
+              </p>
+              <p className="mt-2 font-display text-2xl font-semibold text-[var(--color-text)]">
+                {records.mostHabitsInDay ?? '—'}
+              </p>
+              {records.mostHabitsDate && (
+                <p className="mt-1 text-xs text-[var(--color-text-muted)]">
+                  {new Date(records.mostHabitsDate + 'T12:00:00').toLocaleDateString(
+                    'en-PK',
+                    { month: 'short', day: 'numeric' }
+                  )}
+                </p>
+              )}
+            </div>
+            <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
+                First A grade
+              </p>
+              <p className="mt-2 font-display text-lg font-semibold text-[var(--color-text)]">
+                {records.firstAGradeDate
+                  ? new Date(records.firstAGradeDate + 'T12:00:00').toLocaleDateString(
+                      'en-PK',
+                      { month: 'short', day: 'numeric', year: 'numeric' }
+                    )
+                  : '—'}
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Overall streak */}
       <div className="flex flex-col gap-3 rounded-2xl border border-[var(--color-brand-500)]/30 bg-[var(--color-brand-600)]/10 p-5 sm:flex-row sm:items-center sm:justify-between">
@@ -311,7 +412,7 @@ export default function Dashboard() {
         </section>
       )}
 
-      {/* ── Habit Replacement Overview ── */}
+      {/* Habit Replacement Overview */}
       <section>
         <div className="mb-3 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
@@ -340,80 +441,35 @@ export default function Dashboard() {
           </div>
         ) : (
           <div className="space-y-3">
-            {/* Summary row */}
-            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-              <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 py-3">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
-                  Active Pairs
-                </p>
-                <p className="mt-1 font-display text-2xl font-semibold text-[var(--color-brand-400)]">
-                  {pairs.length}
-                </p>
-              </div>
-              <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 py-3">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
-                  Avg Success
-                </p>
-                <p
-                  className="mt-1 font-display text-2xl font-semibold"
-                  style={{ color: rateColor(avgSuccess) }}
-                >
-                  {avgSuccess}%
-                </p>
-              </div>
-              <div className="col-span-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 py-3 sm:col-span-1">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
-                  Best Pair
-                </p>
-                <p className="mt-1 text-sm font-medium text-[var(--color-text)]">
-                  {topPairs[0]
-                    ? `${topPairs[0].badHabitEmoji} → ${topPairs[0].goodHabitEmoji}`
-                    : '—'}
-                </p>
-                <p className="text-[10px] text-[var(--color-text-muted)]">
-                  {topPairs[0] ? `${topPairs[0].stats?.successRate || 0}% success` : ''}
-                </p>
-              </div>
+            <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+              <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
+                Avg success rate
+              </p>
+              <p
+                className="mt-1 font-display text-2xl font-semibold"
+                style={{ color: rateColor(avgSuccess) }}
+              >
+                {avgSuccess}%
+              </p>
             </div>
-
-            {/* Top pairs list */}
-            <div className="space-y-2">
-              {topPairs.map((pair) => {
-                const rate = pair.stats?.successRate || 0;
-                return (
-                  <div
-                    key={pair._id}
-                    className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 py-3"
+            <div className="grid gap-2 sm:grid-cols-3">
+              {topPairs.map((p) => (
+                <div
+                  key={p._id || p.id}
+                  className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 py-3"
+                >
+                  <p className="text-xs text-[var(--color-text-secondary)]">
+                    {p.badHabitName || p.badHabit || 'Bad'} →{' '}
+                    {p.goodHabitName || p.goodHabit || 'Good'}
+                  </p>
+                  <p
+                    className="mt-1 font-display text-xl font-semibold"
+                    style={{ color: rateColor(p.stats?.successRate || 0) }}
                   >
-                    <div className="flex flex-wrap items-center gap-2 text-sm">
-                      <span className="text-[var(--color-danger)]">
-                        {pair.badHabitEmoji} {pair.badHabitLabel}
-                      </span>
-                      <span className="text-[var(--color-brand-400)]">→</span>
-                      <span className="text-[var(--color-success)]">
-                        {pair.goodHabitEmoji} {pair.goodHabitLabel}
-                      </span>
-                      <span
-                        className="ml-auto text-sm font-semibold"
-                        style={{ color: rateColor(rate) }}
-                      >
-                        {rate}%
-                      </span>
-                    </div>
-                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--color-bg)]">
-                      <div
-                        className="h-full rounded-full transition-all"
-                        style={{ width: `${rate}%`, background: rateColor(rate) }}
-                      />
-                    </div>
-                    <p className="mt-1.5 text-[10px] text-[var(--color-text-muted)]">
-                      Streak: {pair.stats?.streak || 0} day
-                      {(pair.stats?.streak || 0) !== 1 ? 's' : ''} ·{' '}
-                      {pair.stats?.totalEntries || 0} entries
-                    </p>
-                  </div>
-                );
-              })}
+                    {p.stats?.successRate ?? 0}%
+                  </p>
+                </div>
+              ))}
             </div>
           </div>
         )}

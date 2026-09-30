@@ -5,3 +5,4 @@ export const getMonthly = () => api.get('/analytics/monthly');
 export const getStreaks = () => api.get('/analytics/streaks');
 export const getReport = (range = 'week') =>
   api.get('/analytics/report', { params: { range } });
+export const getInsights = () => api.get('/analytics/insights');

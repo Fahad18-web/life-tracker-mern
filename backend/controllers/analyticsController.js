@@ -38,4 +38,19 @@ const getReport = async (req, res, next) => {
   }
 };
 
-module.exports = { getWeekly, getMonthly, getStreaks, getReport };
+const getInsights = async (req, res, next) => {
+  try {
+    const result = await analyticsService.getInsights(req.user._id);
+    return success(res, result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = {
+  getWeekly,
+  getMonthly,
+  getStreaks,
+  getReport,
+  getInsights
+};

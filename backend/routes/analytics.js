@@ -4,7 +4,8 @@ const {
   getWeekly,
   getMonthly,
   getStreaks,
-  getReport
+  getReport,
+  getInsights
 } = require('../controllers/analyticsController');
 const { protect } = require('../middleware/auth');
 
@@ -14,5 +15,6 @@ router.get('/weekly', getWeekly);
 router.get('/monthly', getMonthly);
 router.get('/streaks', getStreaks);
 router.get('/report', getReport);
+router.get('/insights', getInsights);
 
 module.exports = router;
