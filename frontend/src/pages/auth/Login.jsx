@@ -134,7 +134,7 @@ export default function Login() {
         </div>
 
         <p className="mt-6 text-center text-sm text-[var(--color-text-muted)]">
-          Don&apos;t have an account?{' '}
+          Don't have an account?{' '}
           <Link
             to="/register"
             className="font-medium text-[var(--color-brand-400)] hover:text-[var(--color-brand-300)]"
