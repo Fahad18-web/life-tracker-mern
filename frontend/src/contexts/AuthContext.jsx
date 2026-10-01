@@ -1,7 +1,14 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { loginUser, registerUser, getProfile } from '../api/authAPI';
 import toast from 'react-hot-toast';
 import { useTheme } from './ThemeContext';
+import {
+  getToken,
+  getStoredUser,
+  persistSession,
+  clearSession,
+  updateStoredUser
+} from '../utils/sessionStorage';
 
 const AuthContext = createContext(null);
 export const useAuth = () => useContext(AuthContext);
@@ -9,18 +16,11 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider = ({ children }) => {
   const { applyFromPreferences } = useTheme();
 
-  const [user, setUser] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('lt_user')) || null;
-    } catch {
-      return null;
-    }
-  });
+  const [user, setUser] = useState(() => getStoredUser());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('lt_token');
-
+    const token = getToken();
     if (!token) {
       setLoading(false);
       return;
@@ -28,57 +28,79 @@ export const AuthProvider = ({ children }) => {
 
     getProfile()
       .then((res) => {
-        setUser(res.data.user);
-        localStorage.setItem('lt_user', JSON.stringify(res.data.user));
-        if (res.data.user?.preferences) {
-          applyFromPreferences(res.data.user.preferences);
-        }
+        const next = res.data.user;
+        setUser(next);
+        updateStoredUser(next);
+        if (next?.preferences) applyFromPreferences(next.preferences);
       })
       .catch(() => {
-        localStorage.removeItem('lt_token');
-        localStorage.removeItem('lt_user');
+        clearSession();
         setUser(null);
       })
       .finally(() => setLoading(false));
   }, [applyFromPreferences]);
 
-  const login = async (email, password) => {
-    const res = await loginUser({ email, password });
-    localStorage.setItem('lt_token', res.data.token);
-    localStorage.setItem('lt_user', JSON.stringify(res.data.user));
-    setUser(res.data.user);
-    if (res.data.user?.preferences) {
-      applyFromPreferences(res.data.user.preferences);
-    }
-    toast.success(`Welcome back, ${res.data.user.name}! 🌿`);
+  const login = async (email, password, rememberMe = true) => {
+    const res = await loginUser({ email, password, rememberMe });
+    const { token, user: next, rememberMe: persist } = res.data;
+    const shouldRemember = persist !== undefined ? persist : Boolean(rememberMe);
+
+    persistSession(token, next, shouldRemember);
+    setUser(next);
+    if (next?.preferences) applyFromPreferences(next.preferences);
+    toast.success(`Welcome back, ${next.name}!`);
+    return next;
   };
 
   const register = async (name, email, password) => {
     const res = await registerUser({ name, email, password });
-    localStorage.setItem('lt_token', res.data.token);
-    localStorage.setItem('lt_user', JSON.stringify(res.data.user));
-    setUser(res.data.user);
-    if (res.data.user?.preferences) {
-      applyFromPreferences(res.data.user.preferences);
+    const data = res.data;
+
+    if (data.requiresVerification) {
+      toast.success(data.message || 'Check your email to verify your account.');
+      return data;
     }
-    toast.success(`Account created! Welcome, ${res.data.user.name} 🎉`);
+
+    if (data.token && data.user) {
+      persistSession(data.token, data.user, true);
+      setUser(data.user);
+      if (data.user?.preferences) applyFromPreferences(data.user.preferences);
+      toast.success(`Welcome, ${data.user.name}!`);
+    }
+    return data;
   };
 
+  const completeVerification = useCallback(
+    (token, nextUser, rememberMe = false) => {
+      persistSession(token, nextUser, rememberMe);
+      setUser(nextUser);
+      if (nextUser?.preferences) applyFromPreferences(nextUser.preferences);
+    },
+    [applyFromPreferences]
+  );
+
   const logout = () => {
-    localStorage.removeItem('lt_token');
-    localStorage.removeItem('lt_user');
+    clearSession();
     setUser(null);
     toast('Logged out successfully', { icon: '👋' });
   };
 
   const updateUser = (nextUser) => {
     setUser(nextUser);
-    localStorage.setItem('lt_user', JSON.stringify(nextUser));
+    updateStoredUser(nextUser);
   };
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, login, register, logout, updateUser }}
+      value={{
+        user,
+        loading,
+        login,
+        register,
+        logout,
+        updateUser,
+        completeVerification
+      }}
     >
       {children}
     </AuthContext.Provider>

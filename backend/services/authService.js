@@ -26,7 +26,8 @@ class AuthService {
       throw new AppError('Please provide name, email and password', 400);
     }
 
-    const existing = await User.findOne({ email: email.toLowerCase() });
+    const normalizedEmail = String(email).toLowerCase().trim();
+    const existing = await User.findOne({ email: normalizedEmail });
     if (existing) {
       throw new AppError('Email already registered', 400);
     }
@@ -34,8 +35,8 @@ class AuthService {
     const { raw, hash, expires } = createEmailToken();
 
     const user = await User.create({
-      name,
-      email,
+      name: String(name).trim(),
+      email: normalizedEmail,
       passwordHash: password,
       timezone: timezone || 'Asia/Karachi',
       emailVerified: false,
@@ -53,29 +54,43 @@ class AuthService {
       });
     } catch (err) {
       console.error('[auth] verification email failed:', err.message);
-      // Account still created — user can resend
+      // Account remains; user can resend from check-email page
     }
 
+    // No JWT until email is verified
     return {
-      token: generateToken(user._id),
-      user: publicUser(user)
+      requiresVerification: true,
+      message: 'Check your email for a verification link before signing in.',
+      email: user.email
     };
   }
 
-  async login({ email, password }) {
+    async login({ email, password, rememberMe }) {
     if (!email || !password) {
       throw new AppError('Please provide email and password', 400);
     }
 
-    const user = await User.findOne({ email }).select('+passwordHash');
+    const user = await User.findOne({
+      email: String(email).toLowerCase().trim()
+    }).select('+passwordHash');
 
     if (!user || !(await user.comparePassword(password))) {
       throw new AppError('Invalid credentials', 401);
     }
 
+    if (!user.emailVerified) {
+      throw new AppError(
+        'Please verify your email before signing in. Check your inbox for the link.',
+        403
+      );
+    }
+
+    const persist = Boolean(rememberMe);
+
     return {
-      token: generateToken(user._id),
-      user: publicUser(user)
+      token: generateToken(user._id, persist),
+      user: publicUser(user),
+      rememberMe: persist
     };
   }
 
@@ -84,7 +99,7 @@ class AuthService {
       throw new AppError('Invalid or missing token', 400);
     }
 
-    const hash = hashEmailToken(rawToken.trim());
+    const hash = hashEmailToken(rawToken);
     const user = await User.findOne({
       emailVerificationToken: hash,
       emailVerificationExpires: { $gt: new Date() }
@@ -99,17 +114,31 @@ class AuthService {
     user.emailVerificationExpires = undefined;
     await user.save();
 
-    return publicUser(user);
+       return {
+      token: generateToken(user._id, false),
+      user: publicUser(user),
+      message: 'Email verified successfully',
+      rememberMe: false
+    };
   }
 
-  async resendVerification(userId) {
-    const user = await User.findById(userId).select(
-      '+emailVerificationToken +emailVerificationExpires'
-    );
-    if (!user) throw new AppError('User not found', 404);
+  async resendVerificationByEmail(email) {
+    if (!email || typeof email !== 'string') {
+      throw new AppError('Email is required', 400);
+    }
+
+    const generic = {
+      message: 'If an account exists and is unverified, a verification email was sent.'
+    };
+
+    const user = await User.findOne({
+      email: email.toLowerCase().trim()
+    }).select('+emailVerificationToken +emailVerificationExpires');
+
+    if (!user) return generic;
 
     if (user.emailVerified) {
-      throw new AppError('Email is already verified', 400);
+      throw new AppError('Email is already verified. Please sign in.', 400);
     }
 
     const { raw, hash, expires } = createEmailToken();
@@ -118,13 +147,19 @@ class AuthService {
     await user.save();
 
     const verifyUrl = `${clientBaseUrl()}/verify-email?token=${raw}`;
-    await sendVerificationEmail({
-      to: user.email,
-      name: user.name,
-      verifyUrl
-    });
 
-    return { message: 'Verification email sent' };
+    try {
+      await sendVerificationEmail({
+        to: user.email,
+        name: user.name,
+        verifyUrl
+      });
+    } catch (err) {
+      console.error('[auth] resend email failed:', err.message);
+      throw new AppError('Could not send verification email. Try again later.', 502);
+    }
+
+    return generic;
   }
 
   async updatePreferences(userId, updates) {

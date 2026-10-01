@@ -8,6 +8,8 @@ import ProtectedRoute from './components/ui/ProtectedRoute';
 import Header from './components/layout/Header';
 import NotificationBanner from './components/ui/NotificationBanner';
 import EmailVerifyBanner from './components/ui/EmailVerifyBanner';
+
+const CheckEmail = lazy(() => import('./pages/auth/CheckEmail'));
 const VerifyEmail = lazy(() => import('./pages/auth/VerifyEmail'));
 
 // Lazy load pages
@@ -81,6 +83,7 @@ export default function App() {
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
+                <Route path="/check-email" element={<CheckEmail />} />
                 <Route path="/verify-email" element={<VerifyEmail />} />
 
                 {/* Protected */}

@@ -13,19 +13,16 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = async (e) => {
+    const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-
-    const policy = validatePassword(form.password);
-    if (!policy.ok) {
-      setError(policy.message);
-      return;
-    }
-
     setLoading(true);
     try {
-      await register(form.name, form.email, form.password);
+      const data = await register(form.name, form.email, form.password);
+      if (data?.requiresVerification) {
+        navigate(`/check-email?email=${encodeURIComponent(form.email)}`);
+        return;
+      }
       navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed');
@@ -33,7 +30,6 @@ export default function Register() {
       setLoading(false);
     }
   };
-
   return (
     <div className="flex min-h-screen items-center justify-center bg-[var(--color-bg)] px-4">
       <div className="w-full max-w-md">

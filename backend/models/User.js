@@ -31,7 +31,7 @@ const UserSchema = new mongoose.Schema({
     maxlength: [32, 'Avatar id too long'],
     trim: true
   },
-    emailVerified: {
+  emailVerified: {
     type: Boolean,
     default: false
   },

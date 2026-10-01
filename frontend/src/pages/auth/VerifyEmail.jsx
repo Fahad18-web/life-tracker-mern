@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Leaf, CheckCircle2, XCircle } from 'lucide-react';
 import { verifyEmail } from '../../api/authAPI';
 import { useAuth } from '../../contexts/AuthContext';
 
 export default function VerifyEmail() {
   const [params] = useSearchParams();
-  const { updateUser, user } = useAuth();
-  const [status, setStatus] = useState('loading'); // loading | ok | error
+  const navigate = useNavigate();
+  const { completeVerification } = useAuth();
+  const [status, setStatus] = useState('loading');
   const [message, setMessage] = useState('');
 
   useEffect(() => {
@@ -19,20 +20,18 @@ export default function VerifyEmail() {
     }
 
     let cancelled = false;
+
     (async () => {
       try {
         const res = await verifyEmail(token);
         if (cancelled) return;
-        const body = res.data?.data || res.data;
-        if (body?.user && updateUser) {
-          updateUser({
-            ...(user || {}),
-            ...body.user,
-            emailVerified: true
-          });
+        const { token: jwt, user, message: msg } = res.data;
+        if (jwt && user && completeVerification) {
+          completeVerification(jwt, user);
         }
         setStatus('ok');
-        setMessage(body?.message || 'Email verified successfully.');
+        setMessage(msg || 'Email verified successfully.');
+        setTimeout(() => navigate('/dashboard', { replace: true }), 1500);
       } catch (err) {
         if (cancelled) return;
         setStatus('error');
@@ -45,7 +44,7 @@ export default function VerifyEmail() {
     return () => {
       cancelled = true;
     };
-  }, [params]);
+  }, [params, completeVerification, navigate]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[var(--color-bg)] px-4">
@@ -65,12 +64,7 @@ export default function VerifyEmail() {
               Email verified
             </h1>
             <p className="mt-2 text-sm text-[var(--color-text-secondary)]">{message}</p>
-            <Link
-              to="/dashboard"
-              className="mt-6 inline-flex rounded-xl bg-[var(--color-brand-600)] px-4 py-2.5 text-sm font-semibold text-white no-underline"
-            >
-              Go to dashboard
-            </Link>
+            <p className="mt-4 text-xs text-[var(--color-text-muted)]">Redirecting to dashboard…</p>
           </>
         )}
 
