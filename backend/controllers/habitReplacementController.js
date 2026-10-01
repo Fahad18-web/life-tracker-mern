@@ -25,6 +25,19 @@ const createPair = async (req, res, next) => {
   }
 };
 
+const updatePairRules = async (req, res, next) => {
+  try {
+    const pair = await habitReplacementService.updatePairRules(
+      req.user._id,
+      req.params.id,
+      req.body.rules || req.body
+    );
+    return success(res, { pair });
+  } catch (err) {
+    next(err);
+  }
+};
+
 const deletePair = async (req, res, next) => {
   try {
     const result = await habitReplacementService.deletePair(req.user._id, req.params.id);
@@ -34,4 +47,4 @@ const deletePair = async (req, res, next) => {
   }
 };
 
-module.exports = { getPairs, createPair, deletePair };
+module.exports = { getPairs, createPair, updatePairRules, deletePair };
