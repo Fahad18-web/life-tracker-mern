@@ -55,6 +55,8 @@ const getProfile = async (req, res, next) => {
         name: req.user.name,
         email: req.user.email,
         avatar: req.user.avatar || null,
+        emailVerified: Boolean(req.user.emailVerified),
+        onboardingCompleted: Boolean(req.user.onboardingCompleted),
         createdAt: req.user.createdAt
       },
       stats: {
@@ -116,7 +118,9 @@ const updateProfile = async (req, res, next) => {
         _id: user._id,
         name: user.name,
         email: user.email,
-        avatar: user.avatar || null
+        avatar: user.avatar || null,
+        emailVerified: Boolean(user.emailVerified),
+        onboardingCompleted: Boolean(user.onboardingCompleted)
       }
     });
   } catch (err) {
@@ -194,9 +198,42 @@ const deleteAccount = async (req, res, next) => {
   }
 };
 
+const completeOnboarding = async (req, res, next) => {
+  try {
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { onboardingCompleted: true },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        avatar: user.avatar || null,
+        emailVerified: Boolean(user.emailVerified),
+        onboardingCompleted: true,
+        preferences: user.preferences
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getProfile,
   updateProfile,
   changePassword,
-  deleteAccount
+  deleteAccount,
+  completeOnboarding
 };

@@ -12,6 +12,7 @@ function publicUser(user) {
     email: user.email,
     avatar: user.avatar || null,
     emailVerified: Boolean(user.emailVerified),
+    onboardingCompleted: Boolean(user.onboardingCompleted),
     preferences: user.preferences
   };
 }

@@ -20,6 +20,7 @@ import {
 import { fetchEntryDate, saveEntry } from '../api/entriesAPI';
 import { fetchCustomHabits } from '../api/customHabitsAPI';
 import { useNotification } from '../contexts/NotificationContext';
+import ReplacementCoach from '../components/log/ReplacementCoach';
 
 const TODAY = () => new Date().toISOString().split('T')[0];
 
@@ -92,13 +93,12 @@ function HabitChip({ active, bad = false, onClick, children }) {
     <button
       type="button"
       onClick={onClick}
-      className={`flex items-center gap-2.5 rounded-xl border px-3.5 py-3 text-left text-sm transition ${
-        active
+      className={`flex items-center gap-2.5 rounded-xl border px-3.5 py-3 text-left text-sm transition ${active
           ? bad
             ? 'border-[var(--color-danger)]/40 bg-[var(--color-danger)]/10 text-[var(--color-danger)]'
             : 'border-[var(--color-success)]/40 bg-[var(--color-success)]/10 text-[var(--color-success)]'
           : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-hover)] hover:text-[var(--color-text)]'
-      }`}
+        }`}
     >
       {children}
     </button>
@@ -237,7 +237,7 @@ export default function Log() {
           <p className={`font-display text-3xl font-semibold ${scoreColor(score)}`}>{score}</p>
         </div>
       </div>
-
+      <ReplacementCoach good={good} bad={bad} customStates={customStates} />
       {/* Good habits */}
       <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 sm:p-5">
         <h2 className="mb-3 text-sm font-semibold text-[var(--color-text)]">
@@ -335,11 +335,10 @@ export default function Log() {
               key={n}
               type="button"
               onClick={() => setMood(n)}
-              className={`flex h-12 w-12 items-center justify-center rounded-xl border text-xl transition ${
-                mood === n
+              className={`flex h-12 w-12 items-center justify-center rounded-xl border text-xl transition ${mood === n
                   ? 'border-[var(--color-brand-500)] bg-[var(--color-brand-600)]/15 scale-105'
                   : 'border-[var(--color-border)] bg-[var(--color-bg)] hover:border-[var(--color-border-hover)]'
-              }`}
+                }`}
             >
               {['😞', '😕', '😐', '🙂', '😄'][n - 1]}
             </button>

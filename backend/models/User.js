@@ -43,7 +43,10 @@ const UserSchema = new mongoose.Schema({
     type: Date,
     select: false
   },
-
+  onboardingCompleted: {
+    type: Boolean,
+    default: false
+  },
   subscription: {
     plan: { type: String, enum: ['free', 'pro'], default: 'free' },
     validUntil: { type: Date }

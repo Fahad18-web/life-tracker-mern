@@ -11,10 +11,9 @@ import EmailVerifyBanner from './components/ui/EmailVerifyBanner';
 
 const CheckEmail = lazy(() => import('./pages/auth/CheckEmail'));
 const VerifyEmail = lazy(() => import('./pages/auth/VerifyEmail'));
-
-// Lazy load pages
 const Login = lazy(() => import('./pages/auth/Login'));
 const Register = lazy(() => import('./pages/auth/Register'));
+const Onboarding = lazy(() => import('./pages/Onboarding'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Log = lazy(() => import('./pages/Log'));
 const History = lazy(() => import('./pages/History'));
@@ -61,32 +60,39 @@ export default function App() {
                   border: '1px solid var(--color-border)',
                   fontFamily: 'var(--font-sans)',
                   fontSize: '14px',
-                  boxShadow: '0 8px 30px rgba(0,0,0,0.25)',
+                  boxShadow: '0 8px 30px rgba(0,0,0,0.25)'
                 },
                 success: {
                   iconTheme: {
                     primary: 'var(--color-success)',
-                    secondary: 'var(--color-surface)',
-                  },
+                    secondary: 'var(--color-surface)'
+                  }
                 },
                 error: {
                   iconTheme: {
                     primary: 'var(--color-danger)',
-                    secondary: 'var(--color-surface)',
-                  },
-                },
+                    secondary: 'var(--color-surface)'
+                  }
+                }
               }}
             />
             <Suspense fallback={<PageLoader />}>
               <Routes>
-                {/* Public */}
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/check-email" element={<CheckEmail />} />
                 <Route path="/verify-email" element={<VerifyEmail />} />
 
-                {/* Protected */}
+                <Route
+                  path="/onboarding"
+                  element={
+                    <ProtectedRoute>
+                      <Onboarding />
+                    </ProtectedRoute>
+                  }
+                />
+
                 <Route path="/dashboard" element={<ProtectedRoute><AppLayout><Dashboard /></AppLayout></ProtectedRoute>} />
                 <Route path="/log" element={<ProtectedRoute><AppLayout><Log /></AppLayout></ProtectedRoute>} />
                 <Route path="/history" element={<ProtectedRoute><AppLayout><History /></AppLayout></ProtectedRoute>} />
@@ -96,7 +102,6 @@ export default function App() {
                 <Route path="/replacements" element={<ProtectedRoute><AppLayout><HabitReplacementPage /></AppLayout></ProtectedRoute>} />
                 <Route path="/settings" element={<ProtectedRoute><AppLayout><Settings /></AppLayout></ProtectedRoute>} />
 
-                {/* Fallback */}
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Suspense>

@@ -27,6 +27,7 @@ const getMe = async (req, res) => {
       email: req.user.email,
       avatar: req.user.avatar || null,
       emailVerified: Boolean(req.user.emailVerified),
+      onboardingCompleted: Boolean(req.user.onboardingCompleted),
       preferences: req.user.preferences
     }
   });

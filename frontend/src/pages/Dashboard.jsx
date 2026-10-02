@@ -14,6 +14,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { fetchEntryDate } from '../api/entriesAPI';
 import { getWeekly, getMonthly, getStreaks, getInsights } from '../api/analyticsAPI';
 import { fetchPairs } from '../api/habitReplacementAPI';
+import MissedDayBanner from '../components/ui/MissedDayBanner';
+import ShareWeeklyCard from '../components/ShareWeeklyCard';
 
 const TODAY = () => new Date().toISOString().split('T')[0];
 
@@ -119,8 +121,8 @@ export default function Dashboard() {
 
   const avgSuccess = pairs.length
     ? Math.round(
-        pairs.reduce((s, p) => s + (p.stats?.successRate || 0), 0) / pairs.length
-      )
+      pairs.reduce((s, p) => s + (p.stats?.successRate || 0), 0) / pairs.length
+    )
     : 0;
 
   const topPairs = [...pairs]
@@ -143,6 +145,11 @@ export default function Dashboard() {
           })}
         </p>
       </div>
+      <MissedDayBanner
+        hasLoggedToday={!!today}
+        overallStreak={overallStreak}
+        hasHistory={(monthly?.totalEntries ?? 0) > 0}
+      />
 
       {/* Weekly insight */}
       {insight && (
@@ -223,9 +230,9 @@ export default function Dashboard() {
               <p className="mt-2 font-display text-lg font-semibold text-[var(--color-text)]">
                 {records.firstAGradeDate
                   ? new Date(records.firstAGradeDate + 'T12:00:00').toLocaleDateString(
-                      'en-PK',
-                      { month: 'short', day: 'numeric', year: 'numeric' }
-                    )
+                    'en-PK',
+                    { month: 'short', day: 'numeric', year: 'numeric' }
+                  )
                   : '—'}
               </p>
             </div>
@@ -276,9 +283,9 @@ export default function Dashboard() {
             value={
               monthly?.bestDay
                 ? new Date(monthly.bestDay + 'T12:00:00').toLocaleDateString('en-PK', {
-                    month: 'short',
-                    day: 'numeric'
-                  })
+                  month: 'short',
+                  day: 'numeric'
+                })
                 : '—'
             }
             sub="this month"
@@ -322,11 +329,10 @@ export default function Dashboard() {
               return (
                 <div
                   key={d.date}
-                  className={`rounded-xl border px-1 py-3 text-center ${
-                    isToday
-                      ? 'border-[var(--color-brand-500)] bg-[var(--color-brand-600)]/10'
-                      : 'border-[var(--color-border)] bg-[var(--color-surface)]'
-                  }`}
+                  className={`rounded-xl border px-1 py-3 text-center ${isToday
+                    ? 'border-[var(--color-brand-500)] bg-[var(--color-brand-600)]/10'
+                    : 'border-[var(--color-border)] bg-[var(--color-surface)]'
+                    }`}
                 >
                   <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
                     {label}
@@ -348,7 +354,11 @@ export default function Dashboard() {
           </div>
         </section>
       )}
-
+      <ShareWeeklyCard
+        userName={user?.name}
+        overallStreak={overallStreak}
+        weekly={weekly}
+      />
       {/* Habit streaks */}
       {Object.keys(streaks).length > 0 && (
         <section>
@@ -395,11 +405,10 @@ export default function Dashboard() {
                   {data.name}
                 </p>
                 <p
-                  className={`mt-1 font-display text-2xl font-semibold ${
-                    data.type === 'good'
-                      ? 'text-[var(--color-success)]'
-                      : 'text-[var(--color-danger)]'
-                  }`}
+                  className={`mt-1 font-display text-2xl font-semibold ${data.type === 'good'
+                    ? 'text-[var(--color-success)]'
+                    : 'text-[var(--color-danger)]'
+                    }`}
                 >
                   {data.streak}
                 </p>
