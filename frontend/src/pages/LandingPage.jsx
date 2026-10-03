@@ -15,6 +15,16 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
+import Seo from '../components/seo/Seo';
+import JsonLd from '../components/seo/JsonLd';
+import {
+  DEFAULT_TITLE,
+  DEFAULT_DESCRIPTION,
+  LANDING_FAQS,
+  buildWebAppJsonLd,
+  buildFaqJsonLd,
+  buildOrganizationJsonLd
+} from '../config/seo';
 
 const GOOD_HABITS = [
   { emoji: '🌅', label: 'Morning Routine' },
@@ -113,7 +123,11 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-[var(--color-bg)] text-[var(--color-text)]">
-      {/* Nav */}
+      <Seo title={DEFAULT_TITLE} description={DEFAULT_DESCRIPTION} path="/" />
+      <JsonLd id="ld-webapp" data={buildWebAppJsonLd()} />
+      <JsonLd id="ld-faq" data={buildFaqJsonLd()} />
+      <JsonLd id="ld-org" data={buildOrganizationJsonLd()} />
+
       <header
         className={`fixed inset-x-0 top-0 z-50 transition ${
           scrolled
@@ -135,7 +149,6 @@ export default function LandingPage() {
             </span>
           </button>
 
-          {/* Desktop */}
           <div className="hidden items-center gap-2 sm:flex">
             <button
               type="button"
@@ -161,7 +174,6 @@ export default function LandingPage() {
             </button>
           </div>
 
-          {/* Mobile menu toggle */}
           <button
             type="button"
             className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--color-border)] text-[var(--color-text)] sm:hidden"
@@ -173,7 +185,6 @@ export default function LandingPage() {
           </button>
         </div>
 
-        {/* Mobile drawer */}
         {menuOpen && (
           <>
             <div
@@ -217,7 +228,6 @@ export default function LandingPage() {
         )}
       </header>
 
-      {/* Hero */}
       <section className="mx-auto max-w-6xl px-4 pb-16 pt-28 text-center sm:px-6 sm:pt-32">
         <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[var(--color-brand-500)]/30 bg-[var(--color-brand-600)]/10 px-3 py-1 text-xs font-semibold text-[var(--color-brand-400)]">
           Islamic lifestyle · Habit tracking
@@ -227,7 +237,8 @@ export default function LandingPage() {
           <span className="text-[var(--color-brand-400)]">calm, consistent habits</span>
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-base text-[var(--color-text-secondary)] sm:text-lg">
-          Log good and bad habits, track streaks, mood, and daily scores — designed for focus, not noise.
+          Log good and bad habits, track streaks, mood, and daily scores — designed for focus, not
+          noise. Replace bad habits with good ones over real multi-day progress.
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           <button
@@ -247,7 +258,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Features */}
       <section className="mx-auto max-w-6xl px-4 pb-20 sm:px-6">
         <div className="mb-8 text-center">
           <h2 className="font-display text-2xl font-semibold text-[var(--color-text)] sm:text-3xl">
@@ -267,13 +277,14 @@ export default function LandingPage() {
                 <Icon className="h-5 w-5" />
               </div>
               <h3 className="text-base font-semibold text-[var(--color-text)]">{title}</h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-[var(--color-text-secondary)]">{desc}</p>
+              <p className="mt-1.5 text-sm leading-relaxed text-[var(--color-text-secondary)]">
+                {desc}
+              </p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* Habits */}
       <section className="border-y border-[var(--color-border)] bg-[var(--color-surface)]/50 py-16">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="mb-8 text-center">
@@ -319,7 +330,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* How it works */}
       <section className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
         <div className="mb-10 text-center">
           <h2 className="font-display text-2xl font-semibold text-[var(--color-text)] sm:text-3xl">
@@ -347,7 +357,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Grades */}
       <section className="mx-auto max-w-6xl px-4 pb-20 sm:px-6">
         <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 sm:p-8">
           <div className="mb-6 text-center">
@@ -378,7 +387,44 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Final CTA */}
+      <section
+        id="faq"
+        className="mx-auto max-w-6xl px-4 pb-20 sm:px-6"
+        aria-labelledby="faq-heading"
+      >
+        <div className="mb-8 text-center">
+          <h2
+            id="faq-heading"
+            className="font-display text-2xl font-semibold text-[var(--color-text)] sm:text-3xl"
+          >
+            Frequently asked questions
+          </h2>
+          <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
+            Plain answers about LifeTracker, scores, and habit replacement.
+          </p>
+        </div>
+        <div className="mx-auto max-w-3xl space-y-3">
+          {LANDING_FAQS.map((item) => (
+            <details
+              key={item.question}
+              className="group rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3"
+            >
+              <summary className="cursor-pointer list-none text-sm font-semibold text-[var(--color-text)] marker:content-none [&::-webkit-details-marker]:hidden">
+                <span className="flex items-center justify-between gap-3">
+                  {item.question}
+                  <span className="text-[var(--color-text-muted)] transition group-open:rotate-45">
+                    +
+                  </span>
+                </span>
+              </summary>
+              <p className="mt-3 text-sm leading-relaxed text-[var(--color-text-secondary)]">
+                {item.answer}
+              </p>
+            </details>
+          ))}
+        </div>
+      </section>
+
       <section className="mx-auto max-w-6xl px-4 pb-20 sm:px-6">
         <div className="rounded-2xl border border-[var(--color-brand-500)]/30 bg-[var(--color-brand-600)]/10 px-6 py-12 text-center">
           <h2 className="font-display text-2xl font-semibold text-[var(--color-text)] sm:text-3xl">
@@ -397,9 +443,12 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Footer */}
       <footer className="border-t border-[var(--color-border)] py-8 text-center text-sm text-[var(--color-text-muted)]">
-        LifeTracker · Build consistency, one day at a time
+        <p>
+          <strong className="text-[var(--color-text-secondary)]">LifeTracker</strong> — free habit
+          tracker and habit replacement app for daily scores, streaks, and focused routines.
+        </p>
+        <p className="mt-2">Build consistency, one day at a time.</p>
       </footer>
     </div>
   );

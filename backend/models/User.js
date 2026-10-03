@@ -62,6 +62,17 @@ const UserSchema = new mongoose.Schema({
       enum: ['teal', 'ocean', 'sunset', 'forest', 'violet'],
       default: 'teal'
     },
+    dailyReminderEnabled: {
+      type: Boolean,
+      default: false
+    },
+    // Local hour 0–23 when user prefers reminder (best-effort; cron still once/day UTC)
+    dailyReminderHour: {
+      type: Number,
+      min: 0,
+      max: 23,
+      default: 20
+    },
     customHabits: {
       type: [{
         key: { type: String, required: true },

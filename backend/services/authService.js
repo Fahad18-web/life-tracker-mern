@@ -66,7 +66,7 @@ class AuthService {
     };
   }
 
-    async login({ email, password, rememberMe }) {
+  async login({ email, password, rememberMe }) {
     if (!email || !password) {
       throw new AppError('Please provide email and password', 400);
     }
@@ -115,7 +115,7 @@ class AuthService {
     user.emailVerificationExpires = undefined;
     await user.save();
 
-       return {
+    return {
       token: generateToken(user._id, false),
       user: publicUser(user),
       message: 'Email verified successfully',
@@ -178,6 +178,17 @@ class AuthService {
         throw new AppError('Invalid theme preset.', 400);
       }
       allowed.themePreset = updates.themePreset;
+    }
+    if (updates.dailyReminderEnabled !== undefined) {
+      allowed.dailyReminderEnabled = Boolean(updates.dailyReminderEnabled);
+    }
+
+    if (updates.dailyReminderHour !== undefined) {
+      const h = Number(updates.dailyReminderHour);
+      if (!Number.isInteger(h) || h < 0 || h > 23) {
+        throw new AppError('dailyReminderHour must be 0–23', 400);
+      }
+      allowed.dailyReminderHour = h;
     }
 
     if (Array.isArray(updates.customHabits)) {

@@ -1,0 +1,17 @@
+User-agent: *
+Allow: /
+
+# Private app routes — no value for search
+Disallow: /dashboard
+Disallow: /log
+Disallow: /history
+Disallow: /trends
+Disallow: /habits
+Disallow: /profile
+Disallow: /settings
+Disallow: /replacements
+Disallow: /onboarding
+Disallow: /check-email
+Disallow: /verify-email
+
+Sitemap: https://life-tracker-mern.vercel.app/sitemap.xml

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Leaf } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import Seo from '../../components/seo/Seo';
 
 export default function Login() {
   const { login } = useAuth();
@@ -31,6 +32,13 @@ export default function Login() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[var(--color-bg)] px-4">
+      <Seo
+        title="Sign in"
+        description="Sign in to LifeTracker to log habits, track streaks, and view your dashboard."
+        path="/login"
+        noIndex
+      />
+
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--color-brand-600)]/15 text-[var(--color-brand-400)]">
@@ -97,11 +105,7 @@ export default function Login() {
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] transition hover:text-[var(--color-text)]"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
             </div>
@@ -115,10 +119,7 @@ export default function Login() {
                 onChange={(e) => setRememberMe(e.target.checked)}
                 className="h-4 w-4 rounded border-[var(--color-border)] text-[var(--color-brand-600)] focus:ring-[var(--color-brand-500)]"
               />
-              <label
-                htmlFor="remember-me"
-                className="text-sm text-[var(--color-text-secondary)]"
-              >
+              <label htmlFor="remember-me" className="text-sm text-[var(--color-text-secondary)]">
                 Remember me for 14 days
               </label>
             </div>
@@ -134,7 +135,7 @@ export default function Login() {
         </div>
 
         <p className="mt-6 text-center text-sm text-[var(--color-text-muted)]">
-          Don't have an account?{' '}
+          Don&apos;t have an account?{' '}
           <Link
             to="/register"
             className="font-medium text-[var(--color-brand-400)] hover:text-[var(--color-brand-300)]"
