@@ -201,7 +201,7 @@ class AnalyticsService {
       userId,
       date: { $gte: yearFromStr, $lte: toStr }
     })
-      .select('date netScore mood grade good')
+      .select('date netScore mood grade good bad')
       .sort({ date: 1 })
       .lean();
 
@@ -209,283 +209,397 @@ class AnalyticsService {
 
     return {
       insight: this._buildWeeklyInsight(weekEntries),
-      records: this._buildRecords(entries)
+      records: this._buildRecords(entries),
+      personalFocus: this._buildPersonalFocus(weekEntries)
     };
   }
 
-  _buildSummary(entries, fromStr, toStr, range) {
-    const totalLogged = entries.length;
+    _buildSummary(entries, fromStr, toStr, range) {
+      const totalLogged = entries.length;
 
-    let expectedDays = 7;
-    if (range === 'month') expectedDays = 30;
-    if (range === 'year') expectedDays = 365;
+      let expectedDays = 7;
+      if (range === 'month') expectedDays = 30;
+      if (range === 'year') expectedDays = 365;
 
-    const avgScore = totalLogged
-      ? Math.round(entries.reduce((s, e) => s + (e.netScore || 0), 0) / totalLogged)
-      : 0;
+      const avgScore = totalLogged
+        ? Math.round(entries.reduce((s, e) => s + (e.netScore || 0), 0) / totalLogged)
+        : 0;
 
-    const avgMood = totalLogged
-      ? Number(
+      const avgMood = totalLogged
+        ? Number(
           (entries.reduce((s, e) => s + (e.mood || 0), 0) / totalLogged).toFixed(1)
         )
-      : 0;
+        : 0;
 
-    const best = entries.reduce(
-      (a, b) => ((a?.netScore || 0) >= (b?.netScore || 0) ? a : b),
-      entries[0]
-    );
+      const best = entries.reduce(
+        (a, b) => ((a?.netScore || 0) >= (b?.netScore || 0) ? a : b),
+        entries[0]
+      );
 
-    const gradeCounts = { A: 0, B: 0, C: 0, D: 0, F: 0 };
-    for (const e of entries) {
-      if (e.grade && gradeCounts[e.grade] !== undefined) {
-        gradeCounts[e.grade]++;
+      const gradeCounts = { A: 0, B: 0, C: 0, D: 0, F: 0 };
+      for (const e of entries) {
+        if (e.grade && gradeCounts[e.grade] !== undefined) {
+          gradeCounts[e.grade]++;
+        }
       }
+
+      const consistencyPct = expectedDays
+        ? Math.min(100, Math.round((totalLogged / expectedDays) * 100))
+        : 0;
+
+      return {
+        avgScore,
+        avgMood,
+        bestDay: best?.date || null,
+        bestScore: best?.netScore ?? null,
+        totalEntries: totalLogged,
+        consistencyPct,
+        gradeCounts
+      };
     }
 
-    const consistencyPct = expectedDays
-      ? Math.min(100, Math.round((totalLogged / expectedDays) * 100))
-      : 0;
+    _dailySeries(entries, fromStr, toStr, range) {
+      const map = Object.fromEntries(entries.map((e) => [e.date, e]));
+      const days = [];
+      const start = new Date(fromStr + 'T12:00:00');
+      const end = new Date(toStr + 'T12:00:00');
+      const cursor = new Date(start);
 
-    return {
-      avgScore,
-      avgMood,
-      bestDay: best?.date || null,
-      bestScore: best?.netScore ?? null,
-      totalEntries: totalLogged,
-      consistencyPct,
-      gradeCounts
-    };
-  }
-
-  _dailySeries(entries, fromStr, toStr, range) {
-    const map = Object.fromEntries(entries.map((e) => [e.date, e]));
-    const days = [];
-    const start = new Date(fromStr + 'T12:00:00');
-    const end = new Date(toStr + 'T12:00:00');
-    const cursor = new Date(start);
-
-    while (cursor <= end) {
-      const date = cursor.toISOString().split('T')[0];
-      const e = map[date];
-      days.push({
-        date,
-        label:
-          range === 'week'
-            ? cursor.toLocaleDateString('en', { weekday: 'short' })
-            : cursor.toLocaleDateString('en', { month: 'short', day: 'numeric' }),
-        netScore: e?.netScore ?? null,
-        mood: e?.mood ?? null,
-        grade: e?.grade ?? null
-      });
-      cursor.setDate(cursor.getDate() + 1);
-    }
-    return days;
-  }
-
-  _monthlySeries(entries, fromDate, toDate) {
-    const buckets = {};
-    for (const e of entries) {
-      const key = e.date.slice(0, 7);
-      if (!buckets[key]) buckets[key] = [];
-      buckets[key].push(e);
+      while (cursor <= end) {
+        const date = cursor.toISOString().split('T')[0];
+        const e = map[date];
+        days.push({
+          date,
+          label:
+            range === 'week'
+              ? cursor.toLocaleDateString('en', { weekday: 'short' })
+              : cursor.toLocaleDateString('en', { month: 'short', day: 'numeric' }),
+          netScore: e?.netScore ?? null,
+          mood: e?.mood ?? null,
+          grade: e?.grade ?? null
+        });
+        cursor.setDate(cursor.getDate() + 1);
+      }
+      return days;
     }
 
-    const series = [];
-    const cursor = new Date(fromDate.getFullYear(), fromDate.getMonth(), 1);
-    const end = new Date(toDate.getFullYear(), toDate.getMonth(), 1);
+    _monthlySeries(entries, fromDate, toDate) {
+      const buckets = {};
+      for (const e of entries) {
+        const key = e.date.slice(0, 7);
+        if (!buckets[key]) buckets[key] = [];
+        buckets[key].push(e);
+      }
 
-    while (cursor <= end) {
-      const y = cursor.getFullYear();
-      const m = String(cursor.getMonth() + 1).padStart(2, '0');
-      const key = `${y}-${m}`;
-      const list = buckets[key] || [];
+      const series = [];
+      const cursor = new Date(fromDate.getFullYear(), fromDate.getMonth(), 1);
+      const end = new Date(toDate.getFullYear(), toDate.getMonth(), 1);
 
-      const avgScore = list.length
-        ? Math.round(list.reduce((s, e) => s + (e.netScore || 0), 0) / list.length)
-        : null;
-      const avgMood = list.length
-        ? Number(
+      while (cursor <= end) {
+        const y = cursor.getFullYear();
+        const m = String(cursor.getMonth() + 1).padStart(2, '0');
+        const key = `${y}-${m}`;
+        const list = buckets[key] || [];
+
+        const avgScore = list.length
+          ? Math.round(list.reduce((s, e) => s + (e.netScore || 0), 0) / list.length)
+          : null;
+        const avgMood = list.length
+          ? Number(
             (list.reduce((s, e) => s + (e.mood || 0), 0) / list.length).toFixed(1)
           )
-        : null;
+          : null;
 
-      series.push({
-        date: `${key}-01`,
-        label: cursor.toLocaleDateString('en', { month: 'short', year: '2-digit' }),
-        netScore: avgScore,
-        mood: avgMood,
-        grade: null,
-        entryCount: list.length
-      });
+        series.push({
+          date: `${key}-01`,
+          label: cursor.toLocaleDateString('en', { month: 'short', year: '2-digit' }),
+          netScore: avgScore,
+          mood: avgMood,
+          grade: null,
+          entryCount: list.length
+        });
 
-      cursor.setMonth(cursor.getMonth() + 1);
+        cursor.setMonth(cursor.getMonth() + 1);
+      }
+
+      return series;
     }
 
-    return series;
-  }
+    _buildWeeklyInsight(weekEntries) {
+      if (!weekEntries.length) {
+        return {
+          type: 'empty',
+          title: 'Start your week',
+          message: 'No logs this week yet. One entry today keeps momentum going.'
+        };
+      }
 
-  _buildWeeklyInsight(weekEntries) {
-    if (!weekEntries.length) {
+      const habitKeys = [
+        'morning', 'exercise', 'reading', 'prayer',
+        'coding', 'sleep', 'diet', 'hydration'
+      ];
+      const labels = {
+        morning: 'Morning routine',
+        exercise: 'Exercise',
+        reading: 'Reading',
+        prayer: 'Prayer',
+        coding: 'Coding',
+        sleep: 'Sleep',
+        diet: 'Diet',
+        hydration: 'Hydration'
+      };
+
+      const counts = {};
+      habitKeys.forEach((k) => {
+        counts[k] = 0;
+      });
+      for (const e of weekEntries) {
+        for (const k of habitKeys) {
+          if (e.good?.[k]) counts[k]++;
+        }
+      }
+
+      let strongest = habitKeys[0];
+      let weakest = habitKeys[0];
+      for (const k of habitKeys) {
+        if (counts[k] > counts[strongest]) strongest = k;
+        if (counts[k] < counts[weakest]) weakest = k;
+      }
+
+      const best = weekEntries.reduce(
+        (a, b) => ((a?.netScore || 0) >= (b?.netScore || 0) ? a : b),
+        weekEntries[0]
+      );
+
+      const loggedDays = weekEntries.length;
+      const avgScore = Math.round(
+        weekEntries.reduce((s, e) => s + (e.netScore || 0), 0) / loggedDays
+      );
+
+      if (counts[strongest] >= 4 && counts[strongest] > counts[weakest]) {
+        return {
+          type: 'strength',
+          title: 'Weekly strength',
+          message: `${labels[strongest]} led this week (${counts[strongest]}/7 days). Avg score ${avgScore}.`
+        };
+      }
+
+      if (counts[weakest] <= 2 && loggedDays >= 3) {
+        return {
+          type: 'focus',
+          title: 'Gentle focus',
+          message: `${labels[weakest]} only ${counts[weakest]} day(s) this week. One intentional day helps.`
+        };
+      }
+
+      if (best?.netScore != null) {
+        const dayLabel = new Date(best.date + 'T12:00:00').toLocaleDateString('en', {
+          weekday: 'long'
+        });
+        return {
+          type: 'best',
+          title: 'Best day this week',
+          message: `${dayLabel} scored ${best.netScore}${best.grade ? ` (grade ${best.grade})` : ''
+            }. You logged ${loggedDays}/7 days.`
+        };
+      }
+
       return {
-        type: 'empty',
-        title: 'Start your week',
-        message: 'No logs this week yet. One entry today keeps momentum going.'
+        type: 'consistency',
+        title: 'This week',
+        message: `You logged ${loggedDays} day(s). Average score ${avgScore}.`
       };
     }
-
-    const habitKeys = [
-      'morning', 'exercise', 'reading', 'prayer',
-      'coding', 'sleep', 'diet', 'hydration'
+      
+       /**
+   * Personalized weekly focus from last 7 days of logs (no AI).
+   */
+  _buildPersonalFocus(weekEntries) {
+    const GOOD_KEYS = [
+      'morning',
+      'exercise',
+      'reading',
+      'prayer',
+      'coding',
+      'sleep',
+      'diet',
+      'hydration'
     ];
-    const labels = {
+    const BAD_KEYS = ['social', 'procrastination', 'junk', 'late', 'fajr'];
+
+    const GOOD_LABELS = {
       morning: 'Morning routine',
       exercise: 'Exercise',
-      reading: 'Reading',
+      reading: 'Reading / Quran',
       prayer: 'Prayer',
-      coding: 'Coding',
-      sleep: 'Sleep',
-      diet: 'Diet',
+      coding: 'Coding practice',
+      sleep: 'Quality sleep',
+      diet: 'Healthy diet',
       hydration: 'Hydration'
     };
-
-    const counts = {};
-    habitKeys.forEach((k) => {
-      counts[k] = 0;
-    });
-    for (const e of weekEntries) {
-      for (const k of habitKeys) {
-        if (e.good?.[k]) counts[k]++;
-      }
-    }
-
-    let strongest = habitKeys[0];
-    let weakest = habitKeys[0];
-    for (const k of habitKeys) {
-      if (counts[k] > counts[strongest]) strongest = k;
-      if (counts[k] < counts[weakest]) weakest = k;
-    }
-
-    const best = weekEntries.reduce(
-      (a, b) => ((a?.netScore || 0) >= (b?.netScore || 0) ? a : b),
-      weekEntries[0]
-    );
+    const BAD_LABELS = {
+      social: 'Excessive social media',
+      procrastination: 'Procrastination',
+      junk: 'Junk food',
+      late: 'Sleeping late',
+      fajr: 'Missing Fajr'
+    };
 
     const loggedDays = weekEntries.length;
-    const avgScore = Math.round(
-      weekEntries.reduce((s, e) => s + (e.netScore || 0), 0) / loggedDays
-    );
 
-    if (counts[strongest] >= 4 && counts[strongest] > counts[weakest]) {
+    if (loggedDays === 0) {
       return {
-        type: 'strength',
-        title: 'Weekly strength',
-        message: `${labels[strongest]} led this week (${counts[strongest]}/7 days). Avg score ${avgScore}.`
+        type: 'empty',
+        title: 'This week’s focus',
+        habitKey: null,
+        habitLabel: null,
+        kind: null,
+        count: 0,
+        loggedDays: 0,
+        message:
+          'Log a few days this week and we’ll pick one personal focus from your real data.',
+        cta: { label: 'Log today', to: '/log' }
       };
     }
 
-    if (counts[weakest] <= 2 && loggedDays >= 3) {
-      return {
-        type: 'focus',
-        title: 'Gentle focus',
-        message: `${labels[weakest]} only ${counts[weakest]} day(s) this week. One intentional day helps.`
-      };
+    const goodCounts = {};
+    GOOD_KEYS.forEach((k) => {
+      goodCounts[k] = 0;
+    });
+    const badCounts = {};
+    BAD_KEYS.forEach((k) => {
+      badCounts[k] = 0;
+    });
+
+    for (const e of weekEntries) {
+      for (const k of GOOD_KEYS) {
+        if (e.good?.[k]) goodCounts[k]++;
+      }
+      for (const k of BAD_KEYS) {
+        if (e.bad?.[k]) badCounts[k]++;
+      }
     }
 
-    if (best?.netScore != null) {
-      const dayLabel = new Date(best.date + 'T12:00:00').toLocaleDateString('en', {
-        weekday: 'long'
-      });
+    // Weakest good habit (fewest completions)
+    let weakestGood = GOOD_KEYS[0];
+    for (const k of GOOD_KEYS) {
+      if (goodCounts[k] < goodCounts[weakestGood]) weakestGood = k;
+    }
+
+    // Most frequent bad slip
+    let worstBad = BAD_KEYS[0];
+    for (const k of BAD_KEYS) {
+      if (badCounts[k] > badCounts[worstBad]) worstBad = k;
+    }
+
+    const goodScore = goodCounts[weakestGood];
+    const badScore = badCounts[worstBad];
+
+    // Prefer bad-habit focus if it slipped at least twice; else weakest good
+    if (badScore >= 2 && badScore >= loggedDays - goodScore) {
       return {
-        type: 'best',
-        title: 'Best day this week',
-        message: `${dayLabel} scored ${best.netScore}${
-          best.grade ? ` (grade ${best.grade})` : ''
-        }. You logged ${loggedDays}/7 days.`
+        type: 'reduce_bad',
+        title: 'This week’s focus',
+        habitKey: worstBad,
+        habitLabel: BAD_LABELS[worstBad],
+        kind: 'bad',
+        count: badScore,
+        loggedDays,
+        message: `${BAD_LABELS[worstBad]} showed up ${badScore}/${loggedDays} logged day(s). One cleaner day this week is real progress — consider linking a replacement pair.`,
+        cta: { label: 'Log today', to: '/log' },
+        secondaryCta: { label: 'Habit replacement', to: '/replacements' }
       };
     }
 
     return {
-      type: 'consistency',
-      title: 'This week',
-      message: `You logged ${loggedDays} day(s). Average score ${avgScore}.`
+      type: 'build_good',
+      title: 'This week’s focus',
+      habitKey: weakestGood,
+      habitLabel: GOOD_LABELS[weakestGood],
+      kind: 'good',
+      count: goodScore,
+      loggedDays,
+      message: `${GOOD_LABELS[weakestGood]} only ${goodScore}/${loggedDays} day(s) so far. Make that your one intentional win when you log today.`,
+      cta: { label: 'Log today', to: '/log' },
+      secondaryCta: null
     };
   }
 
-  _buildRecords(entries) {
-    if (!entries.length) {
+    _buildRecords(entries) {
+      if (!entries.length) {
+        return {
+          longestStreak: 0,
+          bestScore: null,
+          bestScoreDate: null,
+          mostHabitsInDay: null,
+          mostHabitsDate: null,
+          firstAGradeDate: null,
+          totalEntries: 0
+        };
+      }
+
+      let bestScore = null;
+      let bestScoreDate = null;
+      let mostHabitsInDay = 0;
+      let mostHabitsDate = null;
+      let firstAGradeDate = null;
+
+      const habitKeys = [
+        'morning', 'exercise', 'reading', 'prayer',
+        'coding', 'sleep', 'diet', 'hydration'
+      ];
+
+      for (const e of entries) {
+        const score = e.netScore ?? null;
+        if (score != null && (bestScore == null || score > bestScore)) {
+          bestScore = score;
+          bestScoreDate = e.date;
+        }
+
+        if (e.grade === 'A' && !firstAGradeDate) {
+          firstAGradeDate = e.date;
+        }
+
+        let goodCount = 0;
+        for (const k of habitKeys) {
+          if (e.good?.[k]) goodCount++;
+        }
+        if (goodCount > mostHabitsInDay) {
+          mostHabitsInDay = goodCount;
+          mostHabitsDate = e.date;
+        }
+      }
+
       return {
-        longestStreak: 0,
-        bestScore: null,
-        bestScoreDate: null,
-        mostHabitsInDay: null,
-        mostHabitsDate: null,
-        firstAGradeDate: null,
-        totalEntries: 0
+        longestStreak: this._longestLoggingStreak(entries),
+        bestScore,
+        bestScoreDate,
+        mostHabitsInDay: mostHabitsInDay || null,
+        mostHabitsDate,
+        firstAGradeDate,
+        totalEntries: entries.length
       };
     }
 
-    let bestScore = null;
-    let bestScoreDate = null;
-    let mostHabitsInDay = 0;
-    let mostHabitsDate = null;
-    let firstAGradeDate = null;
+    _longestLoggingStreak(entries) {
+      if (!entries.length) return 0;
+      const dates = [...new Set(entries.map((e) => e.date))].sort();
+      let longest = 1;
+      let current = 1;
 
-    const habitKeys = [
-      'morning', 'exercise', 'reading', 'prayer',
-      'coding', 'sleep', 'diet', 'hydration'
-    ];
-
-    for (const e of entries) {
-      const score = e.netScore ?? null;
-      if (score != null && (bestScore == null || score > bestScore)) {
-        bestScore = score;
-        bestScoreDate = e.date;
+      for (let i = 1; i < dates.length; i++) {
+        const prev = new Date(dates[i - 1] + 'T12:00:00');
+        const curr = new Date(dates[i] + 'T12:00:00');
+        const diff = (curr - prev) / (1000 * 60 * 60 * 24);
+        if (diff === 1) {
+          current++;
+          longest = Math.max(longest, current);
+        } else {
+          current = 1;
+        }
       }
-
-      if (e.grade === 'A' && !firstAGradeDate) {
-        firstAGradeDate = e.date;
-      }
-
-      let goodCount = 0;
-      for (const k of habitKeys) {
-        if (e.good?.[k]) goodCount++;
-      }
-      if (goodCount > mostHabitsInDay) {
-        mostHabitsInDay = goodCount;
-        mostHabitsDate = e.date;
-      }
+      return longest;
     }
-
-    return {
-      longestStreak: this._longestLoggingStreak(entries),
-      bestScore,
-      bestScoreDate,
-      mostHabitsInDay: mostHabitsInDay || null,
-      mostHabitsDate,
-      firstAGradeDate,
-      totalEntries: entries.length
-    };
   }
-
-  _longestLoggingStreak(entries) {
-    if (!entries.length) return 0;
-    const dates = [...new Set(entries.map((e) => e.date))].sort();
-    let longest = 1;
-    let current = 1;
-
-    for (let i = 1; i < dates.length; i++) {
-      const prev = new Date(dates[i - 1] + 'T12:00:00');
-      const curr = new Date(dates[i] + 'T12:00:00');
-      const diff = (curr - prev) / (1000 * 60 * 60 * 24);
-      if (diff === 1) {
-        current++;
-        longest = Math.max(longest, current);
-      } else {
-        current = 1;
-      }
-    }
-    return longest;
-  }
-}
 
 module.exports = new AnalyticsService();

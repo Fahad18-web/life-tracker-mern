@@ -16,6 +16,8 @@ import { getWeekly, getMonthly, getStreaks, getInsights } from '../api/analytics
 import { fetchPairs } from '../api/habitReplacementAPI';
 import MissedDayBanner from '../components/ui/MissedDayBanner';
 import ShareWeeklyCard from '../components/ShareWeeklyCard';
+import PersonalFocusCard from '../components/PersonalFocusCard';
+import { Target } from 'lucide-react'; // optional if unused elsewhere — card has its own icon
 
 const TODAY = () => new Date().toISOString().split('T')[0];
 
@@ -72,6 +74,7 @@ export default function Dashboard() {
   const [pairs, setPairs] = useState([]);
   const [insight, setInsight] = useState(null);
   const [records, setRecords] = useState(null);
+  const [personalFocus, setPersonalFocus] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -103,6 +106,7 @@ export default function Dashboard() {
           const body = payload?.data || payload;
           setInsight(body.insight || null);
           setRecords(body.records || null);
+          setPersonalFocus(body.personalFocus || null);
         }
       } finally {
         setLoading(false);
@@ -150,7 +154,7 @@ export default function Dashboard() {
         overallStreak={overallStreak}
         hasHistory={(monthly?.totalEntries ?? 0) > 0}
       />
-
+      <PersonalFocusCard focus={personalFocus} />
       {/* Weekly insight */}
       {insight && (
         <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">

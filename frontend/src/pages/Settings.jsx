@@ -114,11 +114,10 @@ export default function Settings() {
                 type="button"
                 disabled={saving}
                 onClick={() => handleMode(m.id)}
-                className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-left transition ${
-                  active
+                className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-left transition ${active
                     ? 'border-[var(--color-brand-500)] bg-[var(--color-brand-600)]/15 text-[var(--color-text)]'
                     : 'border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-hover)]'
-                }`}
+                  }`}
               >
                 {m.id === 'dark' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
                 <span className="font-medium">{m.label}</span>
@@ -145,11 +144,10 @@ export default function Settings() {
                 type="button"
                 disabled={saving}
                 onClick={() => handlePreset(p.id)}
-                className={`flex items-start gap-3 rounded-2xl border px-4 py-3 text-left transition ${
-                  active
+                className={`flex items-start gap-3 rounded-2xl border px-4 py-3 text-left transition ${active
                     ? 'border-[var(--color-brand-500)] bg-[var(--color-brand-600)]/10'
                     : 'border-[var(--color-border)] hover:border-[var(--color-border-hover)]'
-                }`}
+                  }`}
               >
                 <span
                   className="mt-0.5 h-8 w-8 shrink-0 rounded-full border border-black/10 shadow-sm"
@@ -201,7 +199,7 @@ export default function Settings() {
               htmlFor="reminder-hour"
               className="mb-1.5 block text-xs font-medium text-[var(--color-text-secondary)]"
             >
-              Preferred local hour (0–23)
+              Preferred local time
             </label>
             <select
               id="reminder-hour"
@@ -210,14 +208,19 @@ export default function Settings() {
               onChange={(e) => handleReminderHour(e.target.value)}
               className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] px-3.5 py-2.5 text-sm text-[var(--color-text)]"
             >
-              {Array.from({ length: 24 }, (_, h) => (
-                <option key={h} value={h}>
-                  {String(h).padStart(2, '0')}:00
-                </option>
-              ))}
+              {Array.from({ length: 24 }, (_, h) => {
+                const hour12 = h % 12 === 0 ? 12 : h % 12;
+                const period = h < 12 ? 'AM' : 'PM';
+                return (
+                  <option key={h} value={h}>
+                    {hour12}:00 {period}
+                  </option>
+                );
+              })}
             </select>
             <p className="mt-1 text-[11px] text-[var(--color-text-muted)]">
-              Cron should run hourly with strictHour for exact match, or once daily without it.
+              e.g. 9:00 AM, 8:00 PM — uses your account timezone (
+              {user?.timezone || 'Asia/Karachi'}).
             </p>
           </div>
         )}
