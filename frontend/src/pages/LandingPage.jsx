@@ -129,11 +129,10 @@ export default function LandingPage() {
       <JsonLd id="ld-org" data={buildOrganizationJsonLd()} />
 
       <header
-        className={`fixed inset-x-0 top-0 z-50 transition ${
-          scrolled
-            ? 'border-b border-[var(--color-border)] bg-[var(--color-bg)]/90 backdrop-blur-md'
-            : 'bg-transparent'
-        }`}
+        className={`fixed inset-x-0 top-0 z-50 transition ${scrolled
+            ? 'border-b border-[var(--color-border)]/50 bg-[var(--color-bg)]/95 backdrop-blur-md shadow-[0_1px_0_0_var(--color-border)]'
+            : 'bg-transparent border-b border-transparent'
+          }`}
       >
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
           <button
