@@ -1,10 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const { dailyReminders } = require('../controllers/cronController');
-const { authLimiter } = require('../middleware/security');
 
-// External cron hits this — protect with CRON_SECRET, not JWT
-router.post('/daily-reminders', authLimiter, dailyReminders);
-router.get('/daily-reminders', authLimiter, dailyReminders);
+// Protected by CRON_SECRET inside controller — no JWT / no auth rate limit
+router.post('/daily-reminders', dailyReminders);
+router.get('/daily-reminders', dailyReminders);
 
 module.exports = router;
