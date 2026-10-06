@@ -11,6 +11,8 @@ import EmailVerifyBanner from './components/ui/EmailVerifyBanner';
 
 const CheckEmail = lazy(() => import('./pages/auth/CheckEmail'));
 const VerifyEmail = lazy(() => import('./pages/auth/VerifyEmail'));
+const ForgotPassword = lazy(() => import('./pages/auth/ForgotPassword'));
+const ResetPassword = lazy(() => import('./pages/auth/ResetPassword'));
 const Login = lazy(() => import('./pages/auth/Login'));
 const Register = lazy(() => import('./pages/auth/Register'));
 const Onboarding = lazy(() => import('./pages/Onboarding'));
@@ -83,6 +85,8 @@ export default function App() {
                 <Route path="/register" element={<Register />} />
                 <Route path="/check-email" element={<CheckEmail />} />
                 <Route path="/verify-email" element={<VerifyEmail />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
 
                 <Route
                   path="/onboarding"

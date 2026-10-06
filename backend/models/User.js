@@ -43,6 +43,14 @@ const UserSchema = new mongoose.Schema({
     type: Date,
     select: false
   },
+  passwordResetToken: {
+    type: String,
+    select: false
+  },
+  passwordResetExpires: {
+    type: Date,
+    select: false
+  },
   onboardingCompleted: {
     type: Boolean,
     default: false
@@ -66,7 +74,6 @@ const UserSchema = new mongoose.Schema({
       type: Boolean,
       default: false
     },
-    // Local hour 0–23 when user prefers reminder (best-effort; cron still once/day UTC)
     dailyReminderHour: {
       type: Number,
       min: 0,

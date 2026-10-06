@@ -2,8 +2,8 @@ const User = require('../models/User');
 const generateToken = require('../utils/generateToken');
 const { normalizeHabitName } = require('../utils/habitCatalog');
 const AppError = require('../utils/AppError');
-const { createEmailToken, hashEmailToken } = require('../utils/emailToken');
-const { sendVerificationEmail } = require('./emailService');
+const { createEmailToken, createPasswordResetToken, hashEmailToken } = require('../utils/emailToken');
+const { sendVerificationEmail, sendPasswordResetEmail } = require('./emailService');
 
 function publicUser(user) {
   return {
@@ -162,7 +162,73 @@ class AuthService {
 
     return generic;
   }
+  async forgotPassword(email) {
+    const generic = {
+      message:
+        'If an account exists for that email, we sent password reset instructions.'
+    };
 
+    if (!email || typeof email !== 'string') {
+      throw new AppError('Email is required', 400);
+    }
+
+    const user = await User.findOne({
+      email: email.toLowerCase().trim()
+    }).select('+passwordResetToken +passwordResetExpires');
+
+    if (!user) return generic;
+
+    const { raw, hash, expires } = createPasswordResetToken();
+    user.passwordResetToken = hash;
+    user.passwordResetExpires = expires;
+    await user.save({ validateBeforeSave: false });
+
+    const resetUrl = `${clientBaseUrl()}/reset-password?token=${raw}`;
+
+    try {
+      await sendPasswordResetEmail({
+        to: user.email,
+        name: user.name,
+        resetUrl
+      });
+    } catch (err) {
+      user.passwordResetToken = undefined;
+      user.passwordResetExpires = undefined;
+      await user.save({ validateBeforeSave: false });
+      console.error('[auth] password reset email failed:', err.message);
+      throw new AppError('Could not send reset email. Try again later.', 502);
+    }
+
+    return generic;
+  }
+
+  async resetPassword({ token, password }) {
+    if (!token || typeof token !== 'string') {
+      throw new AppError('Invalid or missing reset token', 400);
+    }
+    if (!password || String(password).length < 8) {
+      throw new AppError('Password must be at least 8 characters', 400);
+    }
+
+    const hash = hashEmailToken(token);
+    const user = await User.findOne({
+      passwordResetToken: hash,
+      passwordResetExpires: { $gt: new Date() }
+    }).select('+passwordHash +passwordResetToken +passwordResetExpires');
+
+    if (!user) {
+      throw new AppError('Invalid or expired reset link', 400);
+    }
+
+    user.passwordHash = password;
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+    await user.save();
+
+    return {
+      message: 'Password updated. You can sign in with your new password.'
+    };
+  }
   async updatePreferences(userId, updates) {
     const allowed = {};
 

@@ -6,7 +6,9 @@ const {
   getMe,
   updatePreferences,
   verifyEmail,
-  resendVerification
+  resendVerification,
+  forgotPassword,
+  resetPassword
 } = require('../controllers/authController');
 const { protect } = require('../middleware/auth');
 const { authLimiter } = require('../middleware/security');
@@ -18,6 +20,8 @@ router.post('/login', authLimiter, loginValidation, validate, login);
 router.get('/verify-email', authLimiter, verifyEmail);
 router.post('/verify-email', authLimiter, verifyEmail);
 router.post('/resend-verification', authLimiter, resendVerification);
+router.post('/forgot-password', authLimiter, forgotPassword);
+router.post('/reset-password', authLimiter, resetPassword);
 router.get('/me', protect, getMe);
 router.put('/preferences', protect, updatePreferences);
 

@@ -109,7 +109,14 @@ export default function Login() {
                 </button>
               </div>
             </div>
-
+            <div className="flex justify-end">
+              <Link
+                to="/forgot-password"
+                className="text-xs font-medium text-[var(--color-brand-400)] hover:text-[var(--color-brand-300)]"
+              >
+                Forgot password?
+              </Link>
+            </div>
             <div className="flex items-center gap-2">
               <input
                 id="remember-me"
