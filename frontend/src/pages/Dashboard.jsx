@@ -19,6 +19,10 @@ import ShareWeeklyCard from '../components/ShareWeeklyCard';
 import PersonalFocusCard from '../components/PersonalFocusCard';
 import StreakAtRiskCard from '../components/StreakAtRiskCard';
 import { buildStreakAtRisk } from '../utils/streakAtRisk';
+import ReplacementFocusCard from '../components/ReplacementFocusCard';
+import { buildReplacementFocus } from '../utils/replacementFocus';
+import StreakVisualization from '../components/StreakVisualization';
+
 
 const TODAY = () => new Date().toISOString().split('T')[0];
 
@@ -135,7 +139,10 @@ export default function Dashboard() {
       }),
     [today, overallStreak, streaks, customStreaks]
   );
-
+  const replacementFocus = useMemo(
+    () => buildReplacementFocus(pairs),
+    [pairs]
+  );
   if (loading) {
     return <div className="page-loader">Loading dashboard…</div>;
   }
@@ -146,8 +153,8 @@ export default function Dashboard() {
 
   const avgSuccess = pairs.length
     ? Math.round(
-        pairs.reduce((s, p) => s + (p.stats?.successRate || 0), 0) / pairs.length
-      )
+      pairs.reduce((s, p) => s + (p.stats?.successRate || 0), 0) / pairs.length
+    )
     : 0;
 
   const topPairs = [...pairs]
@@ -179,6 +186,7 @@ export default function Dashboard() {
       <StreakAtRiskCard primary={streakRisk.primary} items={streakRisk.items} />
 
       <PersonalFocusCard focus={personalFocus} />
+         <ReplacementFocusCard focus={replacementFocus} />
 
       {insight && (
         <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
@@ -257,9 +265,9 @@ export default function Dashboard() {
               <p className="mt-2 font-display text-lg font-semibold text-[var(--color-text)]">
                 {records.firstAGradeDate
                   ? new Date(records.firstAGradeDate + 'T12:00:00').toLocaleDateString(
-                      'en-PK',
-                      { month: 'short', day: 'numeric', year: 'numeric' }
-                    )
+                    'en-PK',
+                    { month: 'short', day: 'numeric', year: 'numeric' }
+                  )
                   : '—'}
               </p>
             </div>
@@ -308,9 +316,9 @@ export default function Dashboard() {
             value={
               monthly?.bestDay
                 ? new Date(monthly.bestDay + 'T12:00:00').toLocaleDateString('en-PK', {
-                    month: 'short',
-                    day: 'numeric'
-                  })
+                  month: 'short',
+                  day: 'numeric'
+                })
                 : '—'
             }
             sub="this month"
@@ -353,11 +361,10 @@ export default function Dashboard() {
               return (
                 <div
                   key={d.date}
-                  className={`rounded-xl border px-1 py-3 text-center ${
-                    isToday
+                  className={`rounded-xl border px-1 py-3 text-center ${isToday
                       ? 'border-[var(--color-brand-500)] bg-[var(--color-brand-600)]/10'
                       : 'border-[var(--color-border)] bg-[var(--color-surface)]'
-                  }`}
+                    }`}
                 >
                   <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
                     {label}
@@ -386,69 +393,14 @@ export default function Dashboard() {
         weekly={weekly}
       />
 
-      {Object.keys(streaks).length > 0 && (
-        <section>
-          <div className="mb-3 flex items-center gap-2">
-            <Flame className="h-4 w-4 text-[var(--color-warning)]" />
-            <h2 className="text-sm font-semibold text-[var(--color-text)]">Habit Streaks</h2>
-          </div>
-          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
-            {Object.entries(streaks).map(([habit, count]) => (
-              <div
-                key={habit}
-                className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 py-3"
-              >
-                <p className="text-xs font-medium text-[var(--color-text-secondary)]">
-                  {HABIT_LABELS[habit] || habit}
-                </p>
-                <p className="mt-1 font-display text-2xl font-semibold text-[var(--color-warning)]">
-                  {count}
-                  <span className="ml-1 text-xs font-medium text-[var(--color-text-muted)]">
-                    day{count !== 1 ? 's' : ''}
-                  </span>
-                </p>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+      <StreakVisualization
+        weekly={weekly}
+        streaks={streaks}
+        customStreaks={customStreaks}
+        overallStreak={overallStreak}
+      />
 
-      {Object.keys(customStreaks).length > 0 && (
-        <section>
-          <div className="mb-3 flex items-center gap-2">
-            <Trophy className="h-4 w-4 text-[var(--color-brand-400)]" />
-            <h2 className="text-sm font-semibold text-[var(--color-text)]">
-              Custom Habit Streaks
-            </h2>
-          </div>
-          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
-            {Object.entries(customStreaks).map(([key, data]) => (
-              <div
-                key={key}
-                className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 py-3"
-              >
-                <p className="text-lg leading-none">{data.emoji}</p>
-                <p className="mt-1.5 text-xs font-medium text-[var(--color-text-secondary)]">
-                  {data.name}
-                </p>
-                <p
-                  className={`mt-1 font-display text-2xl font-semibold ${
-                    data.type === 'good'
-                      ? 'text-[var(--color-success)]'
-                      : 'text-[var(--color-danger)]'
-                  }`}
-                >
-                  {data.streak}
-                </p>
-                <p className="text-[10px] text-[var(--color-text-muted)]">
-                  {data.type === 'good' ? 'day streak' : 'days avoided'}
-                </p>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
+        {/* Habit Replacements */}
       <section>
         <div className="mb-3 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">

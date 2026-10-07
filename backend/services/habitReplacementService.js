@@ -75,19 +75,29 @@ const calcStats = (pair, allEntries) => {
   const rules = normalizeRules(pair.rules);
   const { windowDays, requireBoth, minLoggedDays } = rules;
 
-  const fromStr = dateNDaysAgo(windowDays);
   const toStr = todayStr();
+
+  // Progress evaluation starts on the day the pair was created
+  let pairStart = toStr;
+  if (pair.createdAt) {
+    pairStart = new Date(pair.createdAt).toISOString().split('T')[0];
+  }
+
+  const windowStart = dateNDaysAgo(windowDays);
+  // Only score days on/after pair creation, still inside the rolling window
+  const fromStr = pairStart > windowStart ? pairStart : windowStart;
 
   const windowEntries = allEntries.filter(
     (e) => e.date >= fromStr && e.date <= toStr
   );
   const byDate = Object.fromEntries(windowEntries.map((e) => [e.date, e]));
 
-  // Calendar days in window (newest first for streak / lastN dots)
+  // Calendar days: today → back, stop before pair start (newest first for dots/streak)
   const calendarDays = [];
   const cursor = new Date(toStr + 'T12:00:00');
   for (let i = 0; i < windowDays; i++) {
     const ds = cursor.toISOString().split('T')[0];
+    if (ds < fromStr) break;
     calendarDays.push(ds);
     cursor.setDate(cursor.getDate() - 1);
   }
@@ -100,37 +110,43 @@ const calcStats = (pair, allEntries) => {
   for (const ds of calendarDays) {
     const e = byDate[ds];
     if (!e) {
-      dayStatuses.push('skip');
+      // No log after pair exists → missed (red in UI)
+      dayStatuses.push('missed');
       continue;
     }
+
     const { status, logged: isLogged } = isSuccessDay(e, pair, requireBoth);
-    dayStatuses.push(status);
+
+    if (status === 'success') {
+      dayStatuses.push('success');
+      successful++;
+    } else if (status === 'partial') {
+      dayStatuses.push('partial');
+    } else if (status === 'failed') {
+      dayStatuses.push('failed');
+    } else {
+      // skip / incomplete log for this pair → treat as missed
+      dayStatuses.push('missed');
+    }
+
     if (isLogged) logged++;
-    if (status === 'success') successful++;
+
     if (requireBoth) {
       const b = badAvoided(e, pair.badHabit, pair.isCustomBad);
       if (b === true) avoided++;
-    } else if (status === 'success' || status === 'partial') {
-      /* optional */
     }
   }
 
-  // Streak from today backwards
+  // Streak: consecutive successes from today backwards
   let streak = 0;
-  for (const status of dayStatuses) {
-    if (status === 'success') streak++;
-    else if (status === 'skip') continue; // no log — break or skip? break is stricter
-    else break;
-  }
-  // Stricter streak: skip breaks streak
-  streak = 0;
   for (const status of dayStatuses) {
     if (status === 'success') streak++;
     else break;
   }
 
-  const rawRate = Math.round((successful / windowDays) * 100);
-  const insufficient = logged < minLoggedDays;
+  // Challenge progress: always ÷ full window (e.g. 1/7 ≈ 14%), not ÷ days since start
+  const denom = windowDays;
+  const successRate = Math.round((successful / denom) * 100);
 
   return {
     windowDays,
@@ -139,16 +155,14 @@ const calcStats = (pair, allEntries) => {
     totalEntries: logged,
     successDays: successful,
     avoidedDays: avoided,
-    // Meaningful progress against full window
-    successRate: insufficient ? null : rawRate,
-    progressLabel: insufficient
-      ? `Building… (${logged}/${minLoggedDays} days logged)`
-      : `${successful}/${windowDays} days`,
-    insufficientData: insufficient,
-    avoidanceRate:
-      logged > 0 ? Math.round((avoided / logged) * 100) : 0,
+    activeDays: calendarDays.length,
+    pairStart: fromStr,
+    successRate,
+    progressLabel: `${successful}/${denom} days in window`,
+    insufficientData: false,
+    avoidanceRate: logged > 0 ? Math.round((avoided / logged) * 100) : 0,
     streak,
-    last7: dayStatuses.slice(0, Math.min(7, windowDays)),
+    last7: dayStatuses.slice(0, Math.min(7, dayStatuses.length)),
     lastN: dayStatuses
   };
 };

@@ -40,10 +40,11 @@ const rateColor = (r) => {
 };
 
 const DOT_COLORS = {
-  success: '#22c55e',
-  partial: '#f59e0b',
-  failed: '#ef4444',
-  skip: '#3f3f46'
+  success: 'var(--color-success)',   // green
+  partial: 'var(--color-warning)',   // amber
+  failed: 'var(--color-danger)',     // red
+  missed: 'var(--color-danger)',     // red — no log / miss
+  skip: 'var(--color-border)'        // legacy
 };
 
 export default function HabitReplacementPage() {
