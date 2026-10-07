@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import { Analytics } from '@vercel/analytics/react';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { NotificationProvider } from './contexts/NotificationContext';
@@ -53,6 +54,7 @@ export default function App() {
       <AuthProvider>
         <InnerProviders>
           <BrowserRouter>
+            <Analytics />
             <Toaster
               position="top-right"
               toastOptions={{
