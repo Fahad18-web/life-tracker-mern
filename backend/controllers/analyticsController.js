@@ -47,10 +47,20 @@ const getInsights = async (req, res, next) => {
   }
 };
 
+const getDashboard = async (req, res, next) => {
+  try {
+    const result = await analyticsService.getDashboard(req.user._id);
+    return success(res, result);
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getWeekly,
   getMonthly,
   getStreaks,
   getReport,
-  getInsights
+  getInsights,
+  getDashboard
 };

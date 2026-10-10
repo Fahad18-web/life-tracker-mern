@@ -11,9 +11,10 @@ import {
   Medal
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { fetchEntryDate } from '../api/entriesAPI';
-import { getWeekly, getMonthly, getStreaks, getInsights } from '../api/analyticsAPI';
-import { fetchPairs } from '../api/habitReplacementAPI';
+import { getDashboard } from '../api/analyticsAPI';
+// import { fetchEntryDate } from '../api/entriesAPI';
+// import { getWeekly, getMonthly, getStreaks, getInsights } from '../api/analyticsAPI';
+// import { fetchPairs } from '../api/habitReplacementAPI';
 import MissedDayBanner from '../components/ui/MissedDayBanner';
 import ShareWeeklyCard from '../components/ShareWeeklyCard';
 import PersonalFocusCard from '../components/PersonalFocusCard';
@@ -82,45 +83,31 @@ export default function Dashboard() {
   const [personalFocus, setPersonalFocus] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+    useEffect(() => {
     const load = async () => {
       try {
-        const [todayRes, weekRes, monthRes, streakRes, pairsRes, insightsRes] =
-          await Promise.allSettled([
-            fetchEntryDate(TODAY()),
-            getWeekly(),
-            getMonthly(),
-            getStreaks(),
-            fetchPairs(),
-            getInsights()
-          ]);
+        const res = await getDashboard();
+        const payload = res.data?.data ?? res.data ?? {};
 
-        if (todayRes.status === 'fulfilled') {
-          setToday(todayRes.value.data?.entry ?? todayRes.value.data ?? null);
-        }
-        if (weekRes.status === 'fulfilled') {
-          setWeekly(weekRes.value.data?.data || weekRes.value.data || []);
-        }
-        if (monthRes.status === 'fulfilled') {
-          setMonthly(monthRes.value.data?.data || monthRes.value.data);
-        }
-        if (streakRes.status === 'fulfilled') {
-          const s = streakRes.value.data?.data || streakRes.value.data || {};
-          setStreaks(s.streaks || {});
-          setCustomStreaks(s.customStreaks || {});
-          setOverallStreak(s.overallStreak || 0);
-        }
-        if (pairsRes.status === 'fulfilled') {
-          const p = pairsRes.value.data;
-          setPairs(p?.pairs || p?.data?.pairs || []);
-        }
-        if (insightsRes.status === 'fulfilled') {
-          const payload = insightsRes.value.data;
-          const body = payload?.data || payload;
-          setInsight(body.insight || null);
-          setRecords(body.records || null);
-          setPersonalFocus(body.personalFocus || null);
-        }
+        setToday(payload.today || null);
+
+        setWeekly(payload.weekly || []);
+
+        setMonthly(payload.monthly || null);
+
+        const s = payload.streaks || {};
+        setStreaks(s.streaks || {});
+        setCustomStreaks(s.customStreaks || {});
+        setOverallStreak(s.overallStreak || 0);
+
+        setPairs(Array.isArray(payload.pairs) ? payload.pairs : []);
+
+        const insights = payload.insights || {};
+        setInsight(insights.insight || null);
+        setRecords(insights.records || null);
+        setPersonalFocus(insights.personalFocus || null);
+      } catch (err) {
+        console.error('[dashboard] aggregate failed', err);
       } finally {
         setLoading(false);
       }

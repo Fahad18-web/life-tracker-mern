@@ -5,12 +5,14 @@ const {
   getMonthly,
   getStreaks,
   getReport,
-  getInsights
+  getInsights,
+  getDashboard
 } = require('../controllers/analyticsController');
 const { protect } = require('../middleware/auth');
 
 router.use(protect);
 
+router.get('/dashboard', getDashboard);
 router.get('/weekly', getWeekly);
 router.get('/monthly', getMonthly);
 router.get('/streaks', getStreaks);

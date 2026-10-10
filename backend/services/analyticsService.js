@@ -1,4 +1,5 @@
 const Entry = require('../models/Entry');
+const habitReplacementService = require('./habitReplacementService');
 const AppError = require('../utils/AppError');
 
 class AnalyticsService {
@@ -212,7 +213,34 @@ class AnalyticsService {
       records: this._buildRecords(entries),
       personalFocus: this._buildPersonalFocus(weekEntries)
     };
-  }
+  }  
+
+      /**
+   * Single payload for Dashboard — one HTTP round-trip.
+   * Reuses existing methods in parallel (same correctness, less client latency).
+   */
+  async getDashboard(userId) {
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    const [weekly, monthly, streaks, insights, pairs, todayEntry] =
+      await Promise.all([
+        this.getWeekly(userId),
+        this.getMonthly(userId),
+        this.getStreaks(userId),
+        this.getInsights(userId),
+        habitReplacementService.getPairs(userId),
+        Entry.findOne({ userId, date: todayStr }).lean()
+      ]);
+
+    return {
+      today: todayEntry || null,
+      weekly,
+      monthly,
+      streaks,
+      insights,
+      pairs
+    };
+  }  
 
     _buildSummary(entries, fromStr, toStr, range) {
       const totalLogged = entries.length;
