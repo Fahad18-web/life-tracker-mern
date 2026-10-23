@@ -34,6 +34,8 @@ app.use(morgan(config.isDev ? 'dev' : 'combined'));
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/entries', require('./routes/entries'));
+app.use('/api/focus', require('./routes/focus'));
+app.use('/api/rituals', require('./routes/rituals'));
 app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/habits', require('./routes/habits'));
 app.use('/api/custom-habits', require('./routes/customHabits'));
