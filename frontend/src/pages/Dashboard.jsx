@@ -26,6 +26,7 @@ import { buildReplacementFocus } from '../utils/replacementFocus';
 import StreakVisualization from '../components/StreakVisualization';
 import DailyFocusBlock from '../components/DailyFocusBlock';
 import DailyRitualCard from '../components/DailyRitualCard';
+import ActiveReplacementStrip from '../components/ActiveReplacementStrip';
 
 const TODAY = () => new Date().toISOString().split('T')[0];
 
@@ -166,7 +167,6 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-5">
-      {/* Header */}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl font-semibold tracking-tight text-[var(--color-text)] sm:text-3xl">
@@ -190,7 +190,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Always-visible alerts (compact zone) */}
       <MissedDayBanner
         hasLoggedToday={!!today}
         overallStreak={overallStreak}
@@ -198,7 +197,6 @@ export default function Dashboard() {
       />
       <StreakAtRiskCard primary={streakRisk.primary} items={streakRisk.items} />
 
-      {/* Tabs */}
       <div
         role="tablist"
         aria-label="Dashboard sections"
@@ -220,14 +218,13 @@ export default function Dashboard() {
               }`}
             >
               <Icon className="h-4 w-4 shrink-0" />
-              <span className="hidden sm:inline">{label}</span>
-              <span className="sm:hidden">{label}</span>
+              <span>{label}</span>
             </button>
           );
         })}
       </div>
 
-      {/* ── TODAY ── */}
+      {/* TODAY */}
       {tab === 'today' && (
         <div role="tabpanel" className="space-y-4">
           {!today ? (
@@ -279,6 +276,9 @@ export default function Dashboard() {
             </div>
           )}
 
+          {/* Replacement visible on Today — independent of letter grade */}
+          <ActiveReplacementStrip pairs={pairs} />
+
           <DailyFocusBlock />
           <DailyRitualCard />
 
@@ -295,7 +295,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* ── PROGRESS ── */}
+      {/* PROGRESS */}
       {tab === 'progress' && (
         <div role="tabpanel" className="space-y-4">
           <div className="flex flex-col gap-3 rounded-2xl border border-[var(--color-brand-500)]/30 bg-[var(--color-brand-600)]/10 p-5 sm:flex-row sm:items-center sm:justify-between">
@@ -385,11 +385,12 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* ── INSIGHTS ── */}
+      {/* INSIGHTS */}
       {tab === 'insights' && (
         <div role="tabpanel" className="space-y-4">
-          <PersonalFocusCard focus={personalFocus} />
+          {/* USP first: replacement separate from daily grade */}
           <ReplacementFocusCard focus={replacementFocus} />
+          <PersonalFocusCard focus={personalFocus} />
 
           {insight && (
             <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
@@ -468,9 +469,9 @@ export default function Dashboard() {
 
           <CollapsibleSection
             title="Habit replacements"
-            subtitle="Success rates for your pairs"
+            subtitle="Window progress — independent of today's letter grade"
             icon={RefreshCw}
-            defaultOpen={false}
+            defaultOpen={true}
             storageKey="lt-collapse-replacements"
           >
             <div className="mb-3 flex justify-end">
@@ -484,7 +485,10 @@ export default function Dashboard() {
             {pairs.length === 0 ? (
               <p className="text-sm text-[var(--color-text-muted)]">
                 No pairs yet.{' '}
-                <Link to="/replacements" className="font-semibold text-[var(--color-brand-400)]">
+                <Link
+                  to="/replacements"
+                  className="font-semibold text-[var(--color-brand-400)] no-underline"
+                >
                   Create one
                 </Link>
               </p>
