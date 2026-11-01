@@ -27,6 +27,7 @@ import StreakVisualization from '../components/StreakVisualization';
 import DailyFocusBlock from '../components/DailyFocusBlock';
 import DailyRitualCard from '../components/DailyRitualCard';
 import ActiveReplacementStrip from '../components/ActiveReplacementStrip';
+import TimeAmbient from '../components/TimeAmbient';
 
 const TODAY = () => new Date().toISOString().split('T')[0];
 
@@ -157,8 +158,8 @@ export default function Dashboard() {
 
   const avgSuccess = pairs.length
     ? Math.round(
-        pairs.reduce((s, p) => s + (p.stats?.successRate || 0), 0) / pairs.length
-      )
+      pairs.reduce((s, p) => s + (p.stats?.successRate || 0), 0) / pairs.length
+    )
     : 0;
 
   const topPairs = [...pairs]
@@ -189,7 +190,7 @@ export default function Dashboard() {
           </span>
         </div>
       </div>
-
+      <TimeAmbient />
       <MissedDayBanner
         hasLoggedToday={!!today}
         overallStreak={overallStreak}
@@ -211,11 +212,10 @@ export default function Dashboard() {
               role="tab"
               aria-selected={active}
               onClick={() => selectTab(id)}
-              className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-sm font-semibold transition ${
-                active
+              className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-sm font-semibold transition ${active
                   ? 'bg-[var(--color-brand-600)] text-white shadow-sm'
                   : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg)] hover:text-[var(--color-text)]'
-              }`}
+                }`}
             >
               <Icon className="h-4 w-4 shrink-0" />
               <span>{label}</span>
@@ -265,9 +265,9 @@ export default function Dashboard() {
                 value={
                   monthly?.bestDay
                     ? new Date(monthly.bestDay + 'T12:00:00').toLocaleDateString('en-PK', {
-                        month: 'short',
-                        day: 'numeric'
-                      })
+                      month: 'short',
+                      day: 'numeric'
+                    })
                     : '—'
                 }
                 sub="this month"
@@ -335,11 +335,10 @@ export default function Dashboard() {
                   return (
                     <div
                       key={d.date}
-                      className={`rounded-xl border px-1 py-3 text-center ${
-                        isToday
+                      className={`rounded-xl border px-1 py-3 text-center ${isToday
                           ? 'border-[var(--color-brand-500)] bg-[var(--color-brand-600)]/10'
                           : 'border-[var(--color-border)] bg-[var(--color-surface)]'
-                      }`}
+                        }`}
                     >
                       <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
                         {label}
@@ -453,9 +452,9 @@ export default function Dashboard() {
                   <p className="mt-1 font-display text-sm font-semibold text-[var(--color-text)]">
                     {records.firstAGradeDate
                       ? new Date(records.firstAGradeDate + 'T12:00:00').toLocaleDateString(
-                          'en-PK',
-                          { month: 'short', day: 'numeric', year: 'numeric' }
-                        )
+                        'en-PK',
+                        { month: 'short', day: 'numeric', year: 'numeric' }
+                      )
                       : '—'}
                   </p>
                 </div>

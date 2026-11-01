@@ -149,3 +149,182 @@ body {
 }
 
 /* teal = default :root brand — no extra block needed */
+
+/* ── Lightweight glass (performance-safe) ── */
+:root {
+  --glass-bg: color-mix(in srgb, var(--color-surface) 78%, transparent);
+  --glass-border: color-mix(in srgb, var(--color-border) 85%, transparent);
+  --glass-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+  --glass-blur: 8px; /* keep ≤ 10px */
+}
+
+[data-theme="light"] {
+  --glass-bg: color-mix(in srgb, var(--color-surface) 82%, transparent);
+  --glass-shadow: 0 8px 24px rgba(15, 23, 20, 0.08);
+}
+
+/**
+ * Header / sticky bars only — translucent surface without blur seams.
+ */
+.glass-header {
+  background: color-mix(in srgb, var(--color-surface) 94%, transparent);
+  border-bottom: none;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+/**
+ * Cards / panels — glass look WITHOUT backdrop-filter (fast on mobile).
+ * Use sparingly (1–2 primary cards max).
+ */
+.glass-panel {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .glass-header,
+  .glass-panel {
+    background: var(--color-surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: none;
+  }
+}
+
+/**
+ * Optional: turn OFF header blur on very small / preference
+ * (uncomment if mobile still lags)
+ */
+/*
+@media (max-width: 640px) {
+  .glass-header {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: color-mix(in srgb, var(--color-surface) 92%, transparent);
+  }
+}
+*/
+
+
+/* ── Time ambient (CSS only, light) ── */
+.time-ambient {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.time-ambient__glow {
+  pointer-events: none;
+  position: absolute;
+  inset: -40% -20% auto -20%;
+  height: 120%;
+  opacity: 0.55;
+}
+
+.time-ambient--morning .time-ambient__glow {
+  background: radial-gradient(
+    ellipse at 50% 0%,
+    color-mix(in srgb, #f59e0b 35%, transparent),
+    color-mix(in srgb, #f97316 12%, transparent) 45%,
+    transparent 70%
+  );
+}
+
+.time-ambient--night .time-ambient__glow {
+  background: radial-gradient(
+    ellipse at 50% 0%,
+    color-mix(in srgb, #6366f1 28%, transparent),
+    color-mix(in srgb, #0ea5e9 10%, transparent) 40%,
+    transparent 70%
+  );
+}
+
+.time-ambient__content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem 1.1rem;
+}
+
+.time-ambient__icon {
+  display: inline-flex;
+  height: 2.25rem;
+  width: 2.25rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--color-brand-600) 15%, transparent);
+  color: var(--color-brand-400);
+}
+
+.time-ambient--morning .time-ambient__icon {
+  color: #fbbf24;
+  background: color-mix(in srgb, #f59e0b 18%, transparent);
+}
+
+.time-ambient--night .time-ambient__icon {
+  color: #a5b4fc;
+  background: color-mix(in srgb, #6366f1 18%, transparent);
+}
+
+.time-ambient__eyebrow {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.time-ambient__title {
+  margin: 0.15rem 0 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.time-ambient__body {
+  margin: 0.25rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--color-text-secondary);
+}
+
+.time-ambient__dismiss {
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 0.25rem;
+}
+
+.time-ambient:not(.time-ambient--static) {
+  animation: time-ambient-in 0.45s ease-out;
+}
+
+@keyframes time-ambient-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .time-ambient:not(.time-ambient--static) {
+    animation: none;
+  }
+}

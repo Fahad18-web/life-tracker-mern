@@ -89,7 +89,7 @@ export default function DailyFocusBlock({ date = TODAY() }) {
 
   return (
     <section
-      className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5"
+      className="glass-panel rounded-2xl p-5"
       aria-labelledby="daily-focus-title"
     >
       <div className="mb-3 flex items-center justify-between gap-2">
