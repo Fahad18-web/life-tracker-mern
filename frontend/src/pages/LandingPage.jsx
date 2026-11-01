@@ -110,8 +110,18 @@ export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24);
+    useEffect(() => {
+    let last = false;
+    const onScroll = () => {
+      const y = window.scrollY;
+      // hysteresis: on at 40px, off only below 12px
+      const next = last ? y > 12 : y > 40;
+      if (next !== last) {
+        last = next;
+        setScrolled(next);
+      }
+    };
+    onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
@@ -129,10 +139,11 @@ export default function LandingPage() {
       <JsonLd id="ld-org" data={buildOrganizationJsonLd()} />
 
       <header
-        className={`fixed inset-x-0 top-0 z-50 transition ${scrolled
-            ? 'border-b border-[var(--color-border)]/50 bg-[var(--color-bg)]/95 backdrop-blur-md shadow-[0_1px_0_0_var(--color-border)]'
-            : 'bg-transparent border-b border-transparent'
+        className={`fixed inset-x-0 top-0 z-50 ${scrolled
+            ? 'bg-[var(--color-bg)]/90 backdrop-blur-[8px]'
+            : 'bg-transparent'
           }`}
+        style={{ borderBottom: 'none', boxShadow: 'none' }}
       >
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
           <button

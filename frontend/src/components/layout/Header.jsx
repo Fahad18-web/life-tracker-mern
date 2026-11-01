@@ -71,10 +71,11 @@ export default function Header() {
   return (
     <>
       <header className="glass-header sticky top-0 z-50">
-        <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4 sm:px-6">
+        <div className="relative mx-auto flex h-14 max-w-6xl items-center px-4 sm:px-6">
+          {/* Left — logo (mobile + desktop) */}
           <Link
             to="/dashboard"
-            className="flex items-center gap-2 text-[var(--color-text)] no-underline"
+            className="relative z-10 flex shrink-0 items-center gap-2 text-[var(--color-text)] no-underline"
           >
             <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--color-brand-600)]/15 text-[var(--color-brand-400)]">
               <Leaf className="h-4 w-4" />
@@ -84,18 +85,21 @@ export default function Header() {
             </span>
           </Link>
 
-          <nav className="ml-4 hidden items-center gap-1 md:flex">
+          {/* Center — desktop only (does not affect mobile flex) */}
+          <nav
+            className="absolute left-1/2 top-1/2 z-0 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-1 md:flex"
+            aria-label="Main"
+          >
             {NAV.map(({ path, label }) => {
               const active = pathname === path;
               return (
                 <Link
                   key={path}
                   to={path}
-                  className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
-                    active
+                  className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${active
                       ? 'bg-[var(--color-surface-2)] text-[var(--color-text)]'
                       : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text)]'
-                  }`}
+                    }`}
                 >
                   {label}
                 </Link>
@@ -103,67 +107,72 @@ export default function Header() {
             })}
           </nav>
 
-          <div className="ml-auto hidden items-center gap-2 md:flex">
-            <button
-              type="button"
-              onClick={() => navigate('/log')}
-              className={`relative ${iconBtn}`}
-              aria-label="Notifications"
-            >
-              <Bell className="h-4 w-4" />
-              {hasPendingLog && (
-                <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[var(--color-danger)]" />
-              )}
-            </button>
+          {/* Right — same as before: desktop actions + mobile actions */}
+          <div className="relative z-10 ml-auto flex items-center gap-2">
+            {/* Desktop actions */}
+            <div className="hidden items-center gap-2 md:flex">
+              <button
+                type="button"
+                onClick={() => navigate('/log')}
+                className={`relative ${iconBtn}`}
+                aria-label="Notifications"
+              >
+                <Bell className="h-4 w-4" />
+                {hasPendingLog && (
+                  <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[var(--color-danger)]" />
+                )}
+              </button>
 
-            <button
-              type="button"
-              onClick={toggleTheme}
-              className={iconBtn}
-              aria-label="Toggle theme"
-            >
-              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </button>
+              <button
+                type="button"
+                onClick={toggleTheme}
+                className={iconBtn}
+                aria-label="Toggle theme"
+              >
+                {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </button>
 
-            <Link to="/settings" className={iconBtn} aria-label="Settings">
-              <Settings className="h-4 w-4" />
-            </Link>
+              <Link to="/settings" className={iconBtn} aria-label="Settings">
+                <Settings className="h-4 w-4" />
+              </Link>
 
-            <Link
-              to="/profile"
-              className="inline-flex rounded-full no-underline transition hover:scale-105"
-              title={user?.name || 'Profile'}
-            >
-              <Avatar avatar={user?.avatar} name={user?.name} size={36} />
-            </Link>
+              <Link
+                to="/profile"
+                className="inline-flex rounded-full no-underline transition hover:scale-105"
+                title={user?.name || 'Profile'}
+              >
+                <Avatar avatar={user?.avatar} name={user?.name} size={36} />
+              </Link>
 
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--color-border)] text-[var(--color-text-secondary)] transition hover:bg-[var(--color-danger)]/10 hover:text-[var(--color-danger)]"
-              aria-label="Logout"
-            >
-              <LogOut className="h-4 w-4" />
-            </button>
-          </div>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--color-border)] text-[var(--color-text-secondary)] transition hover:bg-[var(--color-danger)]/10 hover:text-[var(--color-danger)]"
+                aria-label="Logout"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
+            </div>
 
-          <div className="ml-auto flex items-center gap-2 md:hidden">
-            <button
-              type="button"
-              onClick={toggleTheme}
-              className={iconBtn}
-              aria-label="Toggle theme"
-            >
-              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </button>
-            <button
-              type="button"
-              onClick={() => setMenuOpen(true)}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--color-border)] text-[var(--color-text)]"
-              aria-label="Open menu"
-            >
-              <Menu className="h-4 w-4" />
-            </button>
+            {/* Mobile actions — pehle jaisa */}
+            <div className="flex items-center gap-2 md:hidden">
+              <button
+                type="button"
+                onClick={toggleTheme}
+                className={iconBtn}
+                aria-label="Toggle theme"
+              >
+                {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </button>
+              <button
+                type="button"
+                onClick={() => setMenuOpen(true)}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--color-border)] text-[var(--color-text)]"
+                aria-label="Open menu"
+              >
+                <Menu className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -210,11 +219,10 @@ export default function Header() {
                   <Link
                     key={path}
                     to={path}
-                    className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium no-underline transition ${
-                      active
-                        ? 'bg-[var(--color-surface-2)] text-[var(--color-text)]'
-                        : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg)] hover:text-[var(--color-text)]'
-                    }`}
+                    className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium no-underline transition ${active
+                      ? 'bg-[var(--color-surface-2)] text-[var(--color-text)]'
+                      : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg)] hover:text-[var(--color-text)]'
+                      }`}
                   >
                     <Icon className="h-4 w-4" />
                     {label}
@@ -224,11 +232,10 @@ export default function Header() {
 
               <Link
                 to="/settings"
-                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium no-underline transition ${
-                  pathname === '/settings'
-                    ? 'bg-[var(--color-surface-2)] text-[var(--color-text)]'
-                    : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg)] hover:text-[var(--color-text)]'
-                }`}
+                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium no-underline transition ${pathname === '/settings'
+                  ? 'bg-[var(--color-surface-2)] text-[var(--color-text)]'
+                  : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg)] hover:text-[var(--color-text)]'
+                  }`}
               >
                 <Settings className="h-4 w-4" />
                 Settings

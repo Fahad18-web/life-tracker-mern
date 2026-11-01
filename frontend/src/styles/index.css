@@ -167,11 +167,11 @@ body {
  * Header / sticky bars only — translucent surface without blur seams.
  */
 .glass-header {
-  background: color-mix(in srgb, var(--color-surface) 94%, transparent);
+  background: var(--glass-bg);
   border-bottom: none;
   box-shadow: none;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
 }
 /**
  * Cards / panels — glass look WITHOUT backdrop-filter (fast on mobile).
