@@ -71,7 +71,7 @@ export default function Header() {
   return (
     <>
       <header className="glass-header sticky top-0 z-50">
-        <div className="relative mx-auto flex h-14 max-w-6xl items-center px-4 sm:px-6">
+        <div className="relative mx-auto flex h-14 max-w-7xl items-center px-4 sm:px-6">
           {/* Left — logo (mobile + desktop) */}
           <Link
             to="/dashboard"

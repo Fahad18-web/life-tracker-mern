@@ -1,47 +1,53 @@
 @import "tailwindcss";
 
 :root {
-   --font-sans: "Outfit", system-ui, sans-serif;
+  --font-sans: "Outfit", system-ui, sans-serif;
   --font-display: "Capriola", system-ui, sans-serif;
 
-  --color-brand-50: #f0fdf8;
-  --color-brand-100: #d0f5e9;
-  --color-brand-200: #a3ebd4;
-  --color-brand-300: #6ed9b8;
-  --color-brand-400: #3bbf97;
-  --color-brand-500: #1f9f7a;
-  --color-brand-600: #148063;
-  --color-brand-700: #116651;
-  --color-brand-800: #105143;
-  --color-brand-900: #0f4338;
+ --color-brand-50: #eefbf6;
+  --color-brand-100: #d4f5e8;
+  --color-brand-200: #a9e9d1;
+  --color-brand-300: #6fd4b3;
+  --color-brand-400: #36b892;
+  --color-brand-500: #1a9a76;
+  --color-brand-600: #137b5f;
+  --color-brand-700: #11624c;
+  --color-brand-800: #104f3f;
+  --color-brand-900: #0e4135;
 
-  --color-bg: #0c0f0e;
-  --color-surface: #141918;
-  --color-surface-2: #1c2220;
-  --color-border: #2a3330;
-  --color-border-hover: #3a4541;
+  --color-bg: #0b0d0c;
+  --color-surface: #121615;
+  --color-surface-2: #1a201e;
+ --color-border: #2f3835;
+  --color-border-hover: #3d4844;
 
-  --color-text: #eef2f0;
-  --color-text-secondary: #9aa8a2;
-  --color-text-muted: #6b7872;
+  /* Readable ladder */
+  --color-text: #f3f6f4;
+  /* primary — strongest */
+  --color-text-secondary: #b4c0ba;
+  /* was ~#9aa8a2 — bump */
+  --color-text-muted: #8b9690;
+  /* was ~#6b7872 — bump */
 
-  --color-success: #22c55e;
-  --color-danger: #ef4444;
-  --color-warning: #f59e0b;
+ --color-success: #3dd68c;
+  --color-danger: #f07178;
+  --color-warning: #e6b84d;
 }
 
 [data-theme="light"] {
-  --color-bg: #f6f8f7;
+ --color-bg: #f4f6f5;
   --color-surface: #ffffff;
-  --color-surface-2: #eef2f0;
-  --color-border: #dbe3df;
-  --color-border-hover: #c5d0cb;
-  --color-text: #121816;
-  --color-text-secondary: #4b5953;
-  --color-text-muted: #7a8a83;
+  --color-surface-2: #e8eeeb;
+ --color-border: #d0dad5;
+  --color-border-hover: #b8c5bf;
+  --color-text: #0f1412;
+  --color-text-secondary: #3d4a45;
+  --color-text-muted: #5c6b65;
 }
 
-html, body, #root {
+html,
+body,
+#root {
   min-height: 100%;
 }
 
@@ -95,7 +101,7 @@ body {
   outline-offset: 2px;
 }
 
-/* ── Accent presets (only brand scale changes) ── */
+/* ── Accent presets (buttons, links, highlights) ── */
 [data-accent="ocean"] {
   --color-brand-50: #f0f9ff;
   --color-brand-100: #e0f2fe;
@@ -109,21 +115,21 @@ body {
   --color-brand-900: #0c4a6e;
 }
 
-[data-accent="sunset"] {
-  --color-brand-50: #fff7ed;
-  --color-brand-100: #ffedd5;
-  --color-brand-200: #fed7aa;
-  --color-brand-300: #fdba74;
-  --color-brand-400: #fb923c;
-  --color-brand-500: #f97316;
-  --color-brand-600: #ea580c;
-  --color-brand-700: #c2410c;
-  --color-brand-800: #9a3412;
-  --color-brand-900: #7c2d12;
+[data-accent="amber"] {
+  --color-brand-50: #fffbeb;
+  --color-brand-100: #fef3c7;
+  --color-brand-200: #fde68a;
+  --color-brand-300: #fcd34d;
+  --color-brand-400: #fbbf24;
+  --color-brand-500: #f59e0b;
+  --color-brand-600: #d97706;
+  --color-brand-700: #b45309;
+  --color-brand-800: #92400e;
+  --color-brand-900: #78350f;
 }
 
 [data-accent="forest"] {
-  --color-brand-50: #f0fdf4;
+  --color-brand-50: #f1fbf4;
   --color-brand-100: #dcfce7;
   --color-brand-200: #bbf7d0;
   --color-brand-300: #86efac;
@@ -135,17 +141,17 @@ body {
   --color-brand-900: #14532d;
 }
 
-[data-accent="violet"] {
-  --color-brand-50: #f5f3ff;
-  --color-brand-100: #ede9fe;
-  --color-brand-200: #ddd6fe;
-  --color-brand-300: #c4b5fd;
-  --color-brand-400: #a78bfa;
-  --color-brand-500: #8b5cf6;
-  --color-brand-600: #7c3aed;
-  --color-brand-700: #6d28d9;
-  --color-brand-800: #5b21b6;
-  --color-brand-900: #4c1d95;
+[data-accent="rose"] {
+  --color-brand-50: #fff1f2;
+  --color-brand-100: #ffe4e6;
+  --color-brand-200: #fecdd3;
+  --color-brand-300: #fda4af;
+  --color-brand-400: #fb7185;
+  --color-brand-500: #f43f5e;
+  --color-brand-600: #e11d48;
+  --color-brand-700: #be123c;
+  --color-brand-800: #9f1239;
+  --color-brand-900: #881337;
 }
 
 /* teal = default :root brand — no extra block needed */
@@ -155,7 +161,8 @@ body {
   --glass-bg: color-mix(in srgb, var(--color-surface) 78%, transparent);
   --glass-border: color-mix(in srgb, var(--color-border) 85%, transparent);
   --glass-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
-  --glass-blur: 8px; /* keep ≤ 10px */
+  --glass-blur: 8px;
+  /* keep ≤ 10px */
 }
 
 [data-theme="light"] {
@@ -173,6 +180,7 @@ body {
   -webkit-backdrop-filter: blur(var(--glass-blur));
   backdrop-filter: blur(var(--glass-blur));
 }
+
 /**
  * Cards / panels — glass look WITHOUT backdrop-filter (fast on mobile).
  * Use sparingly (1–2 primary cards max).
@@ -184,6 +192,7 @@ body {
 }
 
 @media (prefers-reduced-transparency: reduce) {
+
   .glass-header,
   .glass-panel {
     background: var(--color-surface);
@@ -226,21 +235,17 @@ body {
 }
 
 .time-ambient--morning .time-ambient__glow {
-  background: radial-gradient(
-    ellipse at 50% 0%,
-    color-mix(in srgb, #f59e0b 35%, transparent),
-    color-mix(in srgb, #f97316 12%, transparent) 45%,
-    transparent 70%
-  );
+  background: radial-gradient(ellipse at 50% 0%,
+      color-mix(in srgb, #f59e0b 35%, transparent),
+      color-mix(in srgb, #f97316 12%, transparent) 45%,
+      transparent 70%);
 }
 
 .time-ambient--night .time-ambient__glow {
-  background: radial-gradient(
-    ellipse at 50% 0%,
-    color-mix(in srgb, #6366f1 28%, transparent),
-    color-mix(in srgb, #0ea5e9 10%, transparent) 40%,
-    transparent 70%
-  );
+  background: radial-gradient(ellipse at 50% 0%,
+      color-mix(in srgb, #6366f1 28%, transparent),
+      color-mix(in srgb, #0ea5e9 10%, transparent) 40%,
+      transparent 70%);
 }
 
 .time-ambient__content {
@@ -317,6 +322,7 @@ body {
     opacity: 0;
     transform: translateY(-6px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -339,27 +345,35 @@ body {
   padding: 0;
   cursor: default;
 }
+
 button.hm-cell {
   cursor: pointer;
 }
+
 .hm-empty {
   visibility: hidden;
 }
+
 .hm-l0 {
   background: color-mix(in srgb, var(--color-border) 65%, transparent);
 }
+
 .hm-l1 {
   background: color-mix(in srgb, var(--color-brand-600) 35%, var(--color-surface));
 }
+
 .hm-l2 {
   background: color-mix(in srgb, var(--color-brand-500) 55%, var(--color-surface));
 }
+
 .hm-l3 {
   background: color-mix(in srgb, var(--color-brand-400) 75%, transparent);
 }
+
 .hm-l4 {
   background: var(--color-brand-400);
 }
+
 [data-theme='light'] .hm-l0 {
   background: #ebedf0;
 }

@@ -7,7 +7,7 @@ export const THEME_PRESETS = [
     id: 'teal',
     label: 'Calm Teal',
     description: 'Default — focus & growth',
-    swatch: '#1f9f7a'
+    swatch: '#137b5f'
   },
   {
     id: 'ocean',
@@ -16,22 +16,22 @@ export const THEME_PRESETS = [
     swatch: '#0284c7'
   },
   {
-    id: 'sunset',
-    label: 'Sunset Warm',
-    description: 'Energy & warmth',
-    swatch: '#ea580c'
+    id: 'amber',
+    label: 'Warm Amber',
+    description: 'Soft energy',
+    swatch: '#d97706'
   },
   {
     id: 'forest',
     label: 'Deep Forest',
     description: 'Grounded & calm',
-    swatch: '#15803d'
+    swatch: '#16a34a'
   },
   {
-    id: 'violet',
-    label: 'Soft Violet',
-    description: 'Creative evening',
-    swatch: '#7c3aed'
+    id: 'rose',
+    label: 'Dusty Rose',
+    description: 'Calm & human',
+    swatch: '#e11d48'
   }
 ];
 

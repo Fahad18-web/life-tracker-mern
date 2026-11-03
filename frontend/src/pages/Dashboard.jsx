@@ -228,71 +228,81 @@ export default function Dashboard() {
       {/* TODAY */}
       {tab === 'today' && (
         <div role="tabpanel" className="space-y-4">
-          {!today ? (
-            <div className="rounded-2xl border border-dashed border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-8 text-center">
-              <div className="mx-auto mb-3 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--color-brand-600)]/15 text-[var(--color-brand-400)]">
-                <NotebookPen className="h-5 w-5" />
-              </div>
-              <h3 className="text-base font-semibold text-[var(--color-text)]">
-                You haven&apos;t logged today yet
-              </h3>
-              <p className="mx-auto mt-1 max-w-md text-sm text-[var(--color-text-muted)]">
-                Log habits to keep your streak and score honest.
-              </p>
-              <Link
-                to="/log"
-                className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[var(--color-brand-600)] px-4 py-2.5 text-sm font-semibold text-white no-underline transition hover:bg-[var(--color-brand-500)]"
-              >
-                Log today&apos;s habits
-                <ArrowRight className="h-4 w-4" />
-              </Link>
+          <div className="grid gap-4 lg:grid-cols-5 lg:items-start">
+            {/* Main column — actions */}
+            <div className="order-2 space-y-4 lg:order-1 lg:col-span-3">
+              <DailyFocusBlock />
+              <DailyRitualCard />
+              {today && (
+                <div className="flex justify-end">
+                  <Link
+                    to="/log"
+                    className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--color-brand-400)] no-underline hover:text-[var(--color-brand-300)]"
+                  >
+                    Edit today&apos;s log <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </div>
+              )}
             </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <StatCard
-                label="Today's Score"
-                value={todayScore}
-                sub={`Grade ${todayGrade}`}
-                valueColor={GRADE_COLORS[todayGrade]}
-              />
-              <StatCard
-                label="Monthly Avg"
-                value={monthly?.avgScore ?? '—'}
-                sub={`${monthly?.totalEntries ?? 0} entries`}
-              />
-              <StatCard label="Avg Mood" value={monthly?.avgMood ?? '—'} sub="out of 5.0" />
-              <StatCard
-                label="Best Day"
-                value={
-                  monthly?.bestDay
-                    ? new Date(monthly.bestDay + 'T12:00:00').toLocaleDateString('en-PK', {
-                      month: 'short',
-                      day: 'numeric'
-                    })
-                    : '—'
-                }
-                sub="this month"
-                valueColor="var(--color-brand-400)"
-              />
+
+            {/* Side column — status */}
+            <div className="order-1 space-y-4 lg:order-2 lg:col-span-2">
+              {!today ? (
+                <div className="rounded-2xl border border-dashed border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-8 text-center">
+                  <div className="mx-auto mb-3 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--color-brand-600)]/15 text-[var(--color-brand-400)]">
+                    <NotebookPen className="h-5 w-5" />
+                  </div>
+                  <h3 className="text-base font-semibold text-[var(--color-text)]">
+                    You haven&apos;t logged today yet
+                  </h3>
+                  <p className="mx-auto mt-1 max-w-md text-sm text-[var(--color-text-muted)]">
+                    Log habits to keep your streak and score honest.
+                  </p>
+                  <Link
+                    to="/log"
+                    className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[var(--color-brand-600)] px-4 py-2.5 text-sm font-semibold text-white no-underline transition hover:bg-[var(--color-brand-500)]"
+                  >
+                    Log today&apos;s habits
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  <StatCard
+                    label="Today's Score"
+                    value={todayScore}
+                    sub={`Grade ${todayGrade}`}
+                    valueColor={GRADE_COLORS[todayGrade]}
+                  />
+                  <StatCard
+                    label="Monthly Avg"
+                    value={monthly?.avgScore ?? '—'}
+                    sub={`${monthly?.totalEntries ?? 0} entries`}
+                  />
+                  <StatCard
+                    label="Avg Mood"
+                    value={monthly?.avgMood ?? '—'}
+                    sub="out of 5.0"
+                  />
+                  <StatCard
+                    label="Best Day"
+                    value={
+                      monthly?.bestDay
+                        ? new Date(monthly.bestDay + 'T12:00:00').toLocaleDateString(
+                          'en-PK',
+                          { month: 'short', day: 'numeric' }
+                        )
+                        : '—'
+                    }
+                    sub="this month"
+                    valueColor="var(--color-brand-400)"
+                  />
+                </div>
+              )}
+
+              <ActiveReplacementStrip pairs={pairs} />
             </div>
-          )}
-
-          {/* Replacement visible on Today — independent of letter grade */}
-          <ActiveReplacementStrip pairs={pairs} />
-
-          <DailyFocusBlock />
-          <DailyRitualCard />
-
-          {today && (
-            <div className="flex justify-end">
-              <Link
-                to="/log"
-                className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--color-brand-400)] no-underline hover:text-[var(--color-brand-300)]"
-              >
-                Edit today&apos;s log <ArrowRight className="h-4 w-4" />
-              </Link>
-            </div>
-          )}
+          </div>
         </div>
       )}
 
