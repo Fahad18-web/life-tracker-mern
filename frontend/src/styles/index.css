@@ -328,3 +328,38 @@ body {
     animation: none;
   }
 }
+
+/* Activity heatmap */
+.hm-cell {
+  display: block;
+  width: 0.6875rem;
+  height: 0.6875rem;
+  border-radius: 2px;
+  border: none;
+  padding: 0;
+  cursor: default;
+}
+button.hm-cell {
+  cursor: pointer;
+}
+.hm-empty {
+  visibility: hidden;
+}
+.hm-l0 {
+  background: color-mix(in srgb, var(--color-border) 65%, transparent);
+}
+.hm-l1 {
+  background: color-mix(in srgb, var(--color-brand-600) 35%, var(--color-surface));
+}
+.hm-l2 {
+  background: color-mix(in srgb, var(--color-brand-500) 55%, var(--color-surface));
+}
+.hm-l3 {
+  background: color-mix(in srgb, var(--color-brand-400) 75%, transparent);
+}
+.hm-l4 {
+  background: var(--color-brand-400);
+}
+[data-theme='light'] .hm-l0 {
+  background: #ebedf0;
+}

@@ -56,11 +56,25 @@ const getDashboard = async (req, res, next) => {
   }
 };
 
+const getHeatmap = async (req, res, next) => {
+  try {
+    const weeks = parseInt(req.query.weeks, 10);
+    const result = await analyticsService.getHeatmap(
+      req.user._id,
+      Number.isFinite(weeks) ? weeks : 53
+    );
+    return success(res, { heatmap: result });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getWeekly,
   getMonthly,
   getStreaks,
   getReport,
   getInsights,
-  getDashboard
+  getDashboard,
+  getHeatmap
 };

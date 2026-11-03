@@ -6,13 +6,15 @@ const {
   getStreaks,
   getReport,
   getInsights,
-  getDashboard
+  getDashboard,
+  getHeatmap
 } = require('../controllers/analyticsController');
 const { protect } = require('../middleware/auth');
 
 router.use(protect);
 
 router.get('/dashboard', getDashboard);
+router.get('/heatmap', getHeatmap);
 router.get('/weekly', getWeekly);
 router.get('/monthly', getMonthly);
 router.get('/streaks', getStreaks);

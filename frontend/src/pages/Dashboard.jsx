@@ -28,6 +28,7 @@ import DailyFocusBlock from '../components/DailyFocusBlock';
 import DailyRitualCard from '../components/DailyRitualCard';
 import ActiveReplacementStrip from '../components/ActiveReplacementStrip';
 import TimeAmbient from '../components/TimeAmbient';
+import ActivityHeatmap from '../components/ActivityHeatmap';
 
 const TODAY = () => new Date().toISOString().split('T')[0];
 
@@ -213,8 +214,8 @@ export default function Dashboard() {
               aria-selected={active}
               onClick={() => selectTab(id)}
               className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-sm font-semibold transition ${active
-                  ? 'bg-[var(--color-brand-600)] text-white shadow-sm'
-                  : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg)] hover:text-[var(--color-text)]'
+                ? 'bg-[var(--color-brand-600)] text-white shadow-sm'
+                : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg)] hover:text-[var(--color-text)]'
                 }`}
             >
               <Icon className="h-4 w-4 shrink-0" />
@@ -308,7 +309,7 @@ export default function Dashboard() {
                   Overall logging streak
                 </p>
                 <p className="mt-0.5 text-sm text-[var(--color-text-secondary)]">
-                  Consecutive days you&apos;ve logged
+                  Consecutive days you've logged
                 </p>
               </div>
             </div>
@@ -336,8 +337,8 @@ export default function Dashboard() {
                     <div
                       key={d.date}
                       className={`rounded-xl border px-1 py-3 text-center ${isToday
-                          ? 'border-[var(--color-brand-500)] bg-[var(--color-brand-600)]/10'
-                          : 'border-[var(--color-border)] bg-[var(--color-surface)]'
+                        ? 'border-[var(--color-brand-500)] bg-[var(--color-brand-600)]/10'
+                        : 'border-[var(--color-border)] bg-[var(--color-surface)]'
                         }`}
                     >
                       <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
@@ -366,7 +367,7 @@ export default function Dashboard() {
             overallStreak={overallStreak}
             weekly={weekly}
           />
-
+          <ActivityHeatmap weeks={53} />
           <CollapsibleSection
             title="Streak visualization"
             subtitle="Week activity + habit bars"

@@ -7,3 +7,5 @@ export const getStreaks = () => api.get('/analytics/streaks');
 export const getReport = (range = 'week') =>
   api.get('/analytics/report', { params: { range } });
 export const getInsights = () => api.get('/analytics/insights');
+export const getHeatmap = (weeks = 53) =>
+  api.get('/analytics/heatmap', { params: { weeks } });
