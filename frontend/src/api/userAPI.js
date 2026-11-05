@@ -11,3 +11,8 @@ export const exportMyData = (format = 'json') =>
     params: { format },
     responseType: 'blob'
   });
+
+  export const exportMyDataJson = () =>
+  api.get('/users/export', {
+    params: { format: 'json' }
+  });

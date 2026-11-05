@@ -11,7 +11,8 @@ import {
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { updatePrefs } from '../api/authAPI';
-import { exportMyData } from '../api/userAPI';
+import { exportMyData , exportMyDataJson } from '../api/userAPI';
+import { downloadEntriesPdf } from '../utils/exportPdf';
 import { downloadBlob } from '../utils/downloadBlob';
 import { THEME_PRESETS, THEME_MODES } from '../config/themePresets';
 
@@ -87,6 +88,29 @@ export default function Settings() {
     }
   };
 
+  const handleExportPdf = async () => {
+    if (!user) {
+      toast.error('Please sign in to export data');
+      return;
+    }
+
+    setExporting(true);
+    try {
+      const res = await exportMyDataJson();
+      const payload = res.data?.data ?? res.data;
+      downloadEntriesPdf({
+        userName: user?.name,
+        payload
+      });
+      toast.success('PDF downloaded');
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'PDF export failed');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+
   return (
     <div className="space-y-6">
       <div>
@@ -115,8 +139,8 @@ export default function Settings() {
                 disabled={saving}
                 onClick={() => handleMode(m.id)}
                 className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-left transition ${active
-                    ? 'border-[var(--color-brand-500)] bg-[var(--color-brand-600)]/15 text-[var(--color-text)]'
-                    : 'border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-hover)]'
+                  ? 'border-[var(--color-brand-500)] bg-[var(--color-brand-600)]/15 text-[var(--color-text)]'
+                  : 'border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-hover)]'
                   }`}
               >
                 {m.id === 'dark' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
@@ -145,8 +169,8 @@ export default function Settings() {
                 disabled={saving}
                 onClick={() => handlePreset(p.id)}
                 className={`flex items-start gap-3 rounded-2xl border px-4 py-3 text-left transition ${active
-                    ? 'border-[var(--color-brand-500)] bg-[var(--color-brand-600)]/10'
-                    : 'border-[var(--color-border)] hover:border-[var(--color-border-hover)]'
+                  ? 'border-[var(--color-brand-500)] bg-[var(--color-brand-600)]/10'
+                  : 'border-[var(--color-border)] hover:border-[var(--color-border-hover)]'
                   }`}
               >
                 <span
@@ -249,6 +273,15 @@ export default function Settings() {
           >
             <Download className="h-4 w-4" />
             {exporting ? 'Preparing…' : 'Download CSV'}
+          </button>
+          <button
+            type="button"
+            disabled={exporting || !user}
+            onClick={handleExportPdf}
+            className="inline-flex items-center gap-2 rounded-xl border border-[var(--color-border)] px-4 py-2.5 text-sm font-semibold text-[var(--color-text)] disabled:opacity-50"
+          >
+            <Download className="h-4 w-4" />
+            {exporting ? 'Preparing…' : 'Download PDF'}
           </button>
         </div>
       </section>
