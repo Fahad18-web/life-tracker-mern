@@ -59,6 +59,20 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+#root {
+  width: 100%;
+  min-width: 0;
+}
+
+/* Let responsive flex/grid children shrink to the available track. */
+:where(.flex > *, .grid > *) {
+  min-width: 0;
+}
+
+:where(input, textarea, select, button) {
+  max-width: 100%;
+}
+
 .font-display {
   font-family: var(--font-display);
 }
