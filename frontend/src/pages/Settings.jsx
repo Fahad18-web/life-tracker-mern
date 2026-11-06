@@ -11,16 +11,19 @@ import {
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { updatePrefs } from '../api/authAPI';
-import { exportMyData , exportMyDataJson } from '../api/userAPI';
+import { exportMyData, exportMyDataJson } from '../api/userAPI';
 import { downloadEntriesPdf } from '../utils/exportPdf';
 import { downloadBlob } from '../utils/downloadBlob';
 import { THEME_PRESETS, THEME_MODES } from '../config/themePresets';
+import { enablePush, disablePush } from '../utils/pushClient';
+
 
 export default function Settings() {
   const { theme, preset, setTheme, setPreset } = useTheme();
   const { user, updateUser } = useAuth();
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [pushBusy, setPushBusy] = useState(false);
 
   const reminderOn = Boolean(user?.preferences?.dailyReminderEnabled);
   const reminderHour = Number(user?.preferences?.dailyReminderHour ?? 20);
@@ -110,6 +113,30 @@ export default function Settings() {
     }
   };
 
+
+  const handleEnablePush = async () => {
+    setPushBusy(true);
+    try {
+      await enablePush();
+      toast.success('Push notifications enabled');
+    } catch (err) {
+      toast.error(err?.message || 'Could not enable push');
+    } finally {
+      setPushBusy(false);
+    }
+  };
+
+  const handleDisablePush = async () => {
+    setPushBusy(true);
+    try {
+      await disablePush();
+      toast.success('Push notifications disabled');
+    } catch (err) {
+      toast.error(err?.message || 'Could not disable push');
+    } finally {
+      setPushBusy(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -248,6 +275,34 @@ export default function Settings() {
             </p>
           </div>
         )}
+      </section>
+
+      {/* Push Notifications */}
+      <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
+        <h2 className="mb-1 text-sm font-semibold text-[var(--color-text)]">
+          Push notifications
+        </h2>
+        <p className="mb-4 text-xs text-[var(--color-text-muted)]">
+          Browser alerts for log reminders. Works best when the app is installed (PWA).
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={pushBusy || !user}
+            onClick={handleEnablePush}
+            className="rounded-xl bg-[var(--color-brand-600)] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+          >
+            {pushBusy ? 'Please wait…' : 'Enable push'}
+          </button>
+          <button
+            type="button"
+            disabled={pushBusy || !user}
+            onClick={handleDisablePush}
+            className="rounded-xl border border-[var(--color-border)] px-4 py-2.5 text-sm font-semibold text-[var(--color-text)] disabled:opacity-50"
+          >
+            Disable
+          </button>
+        </div>
       </section>
 
       <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">

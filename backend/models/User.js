@@ -59,6 +59,17 @@ const UserSchema = new mongoose.Schema({
     plan: { type: String, enum: ['free', 'pro'], default: 'free' },
     validUntil: { type: Date }
   },
+  pushSubscription: {
+    type: {
+      endpoint: { type: String },
+      keys: {
+        p256dh: { type: String },
+        auth: { type: String }
+      }
+    },
+    default: undefined,
+    select: false
+  },
   preferences: {
     theme: {
       type: String,

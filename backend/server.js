@@ -42,6 +42,7 @@ app.use('/api/custom-habits', require('./routes/customHabits'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/habit-replacements', require('./routes/habitReplacements'));
 app.use('/api/cron', require('./routes/cron'));
+app.use('/api/push', require('./routes/push'));
 
 // Health check
 app.get('/', (req, res) => {
