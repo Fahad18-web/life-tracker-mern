@@ -16,7 +16,7 @@ import { downloadEntriesPdf } from '../utils/exportPdf';
 import { downloadBlob } from '../utils/downloadBlob';
 import { THEME_PRESETS, THEME_MODES } from '../config/themePresets';
 import { enablePush, disablePush } from '../utils/pushClient';
-
+import { WHATS_NEW_STORAGE_KEY } from '../config/whatsNew';
 
 export default function Settings() {
   const { theme, preset, setTheme, setPreset } = useTheme();
@@ -113,6 +113,14 @@ export default function Settings() {
     }
   };
 
+  const handleShowWhatsNew = () => {
+    try {
+      localStorage.removeItem(WHATS_NEW_STORAGE_KEY);
+    } catch {
+      /* ignore */
+    }
+    window.location.reload();
+  };
 
   const handleEnablePush = async () => {
     setPushBusy(true);
@@ -340,6 +348,23 @@ export default function Settings() {
           </button>
         </div>
       </section>
+
+      <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
+        <h2 className="mb-1 text-sm font-semibold text-[var(--color-text)]">
+          What&apos;s new
+        </h2>
+        <p className="mb-4 text-xs text-[var(--color-text-muted)]">
+          See the latest product updates again.
+        </p>
+        <button
+          type="button"
+          onClick={handleShowWhatsNew}
+          className="rounded-xl border border-[var(--color-border)] px-4 py-2.5 text-sm font-semibold text-[var(--color-text)]"
+        >
+          Show what&apos;s new
+        </button>
+      </section>
+
     </div>
   );
 }

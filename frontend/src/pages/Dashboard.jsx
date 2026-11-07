@@ -48,17 +48,19 @@ const GRADE_COLORS = {
 
 function StatCard({ label, value, sub, valueColor }) {
   return (
-    <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 transition hover:border-[var(--color-border-hover)]">
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
+    <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-3.5">
+      <p className="text-[11px] font-medium text-[var(--color-text-muted)]">
         {label}
       </p>
       <p
-        className="mt-2 font-display text-3xl font-semibold tracking-tight"
+        className="mt-1.5 font-display text-2xl font-semibold tracking-tight"
         style={{ color: valueColor || 'var(--color-text)' }}
       >
         {value}
       </p>
-      {sub && <p className="mt-1 text-xs text-[var(--color-text-muted)]">{sub}</p>}
+      {sub ? (
+        <p className="mt-0.5 text-xs text-[var(--color-text-secondary)]">{sub}</p>
+      ) : null}
     </div>
   );
 }
@@ -159,8 +161,8 @@ export default function Dashboard() {
 
   const avgSuccess = pairs.length
     ? Math.round(
-      pairs.reduce((s, p) => s + (p.stats?.successRate || 0), 0) / pairs.length
-    )
+        pairs.reduce((s, p) => s + (p.stats?.successRate || 0), 0) / pairs.length
+      )
     : 0;
 
   const topPairs = [...pairs]
@@ -174,7 +176,7 @@ export default function Dashboard() {
           <h1 className="font-display text-2xl font-semibold tracking-tight text-[var(--color-text)] sm:text-3xl">
             Welcome back, {firstName}
           </h1>
-          <p className="mt-1 text-sm text-[var(--color-text-muted)]">
+          <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
             {new Date().toLocaleDateString('en-PK', {
               weekday: 'long',
               year: 'numeric',
@@ -191,6 +193,7 @@ export default function Dashboard() {
           </span>
         </div>
       </div>
+
       <TimeAmbient />
       <MissedDayBanner
         hasLoggedToday={!!today}
@@ -213,10 +216,11 @@ export default function Dashboard() {
               role="tab"
               aria-selected={active}
               onClick={() => selectTab(id)}
-              className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-sm font-semibold transition ${active
-                ? 'bg-[var(--color-brand-600)] text-white shadow-sm'
-                : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg)] hover:text-[var(--color-text)]'
-                }`}
+              className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-sm font-semibold transition ${
+                active
+                  ? 'bg-[var(--color-brand-600)] text-white shadow-sm'
+                  : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg)] hover:text-[var(--color-text)]'
+              }`}
             >
               <Icon className="h-4 w-4 shrink-0" />
               <span>{label}</span>
@@ -225,73 +229,70 @@ export default function Dashboard() {
         })}
       </div>
 
-      {/* TODAY */}
+      {/* TODAY — Design Pass 1 */}
       {tab === 'today' && (
-        <div role="tabpanel" className="space-y-4">
-          <div className="grid gap-4 lg:grid-cols-5 lg:items-start">
-            {/* Main column — actions */}
-            <div className="order-2 space-y-4 lg:order-1 lg:col-span-3">
+        <div role="tabpanel" className="space-y-[var(--space-section)]">
+          <div className="grid min-w-0 gap-4 lg:grid-cols-5 lg:items-start">
+            <div className="order-2 min-w-0 space-y-4 lg:order-1 lg:col-span-3">
               <DailyFocusBlock />
               <DailyRitualCard />
-              {today && (
+              {today ? (
                 <div className="flex justify-end">
                   <Link
                     to="/log"
                     className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--color-brand-400)] no-underline hover:text-[var(--color-brand-300)]"
                   >
-                    Edit today&apos;s log <ArrowRight className="h-4 w-4" />
+                    Edit today&apos;s log
+                    <ArrowRight className="h-4 w-4" />
                   </Link>
                 </div>
-              )}
+              ) : null}
             </div>
 
-            {/* Side column — status */}
-            <div className="order-1 space-y-4 lg:order-2 lg:col-span-2">
+            <div className="order-1 min-w-0 space-y-4 lg:order-2 lg:col-span-2">
               {!today ? (
-                <div className="rounded-2xl border border-dashed border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-8 text-center">
-                  <div className="mx-auto mb-3 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--color-brand-600)]/15 text-[var(--color-brand-400)]">
-                    <NotebookPen className="h-5 w-5" />
-                  </div>
-                  <h3 className="text-base font-semibold text-[var(--color-text)]">
-                    You haven&apos;t logged today yet
-                  </h3>
-                  <p className="mx-auto mt-1 max-w-md text-sm text-[var(--color-text-muted)]">
-                    Log habits to keep your streak and score honest.
+                <div className="lt-card-muted text-center">
+                  <h3 className="lt-title">No log yet today</h3>
+                  <p className="lt-help mx-auto max-w-sm">
+                    Two minutes. Check what you did — good and bad — then close
+                    the day honestly.
                   </p>
                   <Link
                     to="/log"
-                    className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[var(--color-brand-600)] px-4 py-2.5 text-sm font-semibold text-white no-underline transition hover:bg-[var(--color-brand-500)]"
+                    className="mt-4 inline-flex items-center gap-2 rounded-[var(--radius-control)] bg-[var(--color-brand-600)] px-4 py-2.5 text-sm font-semibold text-white no-underline transition hover:bg-[var(--color-brand-500)]"
                   >
-                    Log today&apos;s habits
+                    Log today
                     <ArrowRight className="h-4 w-4" />
                   </Link>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-3">
                   <StatCard
-                    label="Today's Score"
+                    label="Today's score"
                     value={todayScore}
                     sub={`Grade ${todayGrade}`}
                     valueColor={GRADE_COLORS[todayGrade]}
                   />
                   <StatCard
-                    label="Monthly Avg"
+                    label="Monthly avg"
                     value={monthly?.avgScore ?? '—'}
                     sub={`${monthly?.totalEntries ?? 0} entries`}
                   />
                   <StatCard
-                    label="Avg Mood"
+                    label="Avg mood"
                     value={monthly?.avgMood ?? '—'}
                     sub="out of 5.0"
                   />
                   <StatCard
-                    label="Best Day"
+                    label="Best day"
                     value={
                       monthly?.bestDay
-                        ? new Date(monthly.bestDay + 'T12:00:00').toLocaleDateString(
-                          'en-PK',
-                          { month: 'short', day: 'numeric' }
-                        )
+                        ? new Date(
+                            monthly.bestDay + 'T12:00:00'
+                          ).toLocaleDateString('en-PK', {
+                            month: 'short',
+                            day: 'numeric'
+                          })
                         : '—'
                     }
                     sub="this month"
@@ -319,7 +320,7 @@ export default function Dashboard() {
                   Overall logging streak
                 </p>
                 <p className="mt-0.5 text-sm text-[var(--color-text-secondary)]">
-                  Consecutive days you've logged
+                  Consecutive days you&apos;ve logged
                 </p>
               </div>
             </div>
@@ -340,16 +341,18 @@ export default function Dashboard() {
               <div className="grid grid-cols-7 gap-2">
                 {weekly.map((d) => {
                   const isToday = d.date === TODAY();
-                  const label = new Date(d.date + 'T12:00:00').toLocaleDateString('en-PK', {
-                    weekday: 'short'
-                  });
+                  const label = new Date(d.date + 'T12:00:00').toLocaleDateString(
+                    'en-PK',
+                    { weekday: 'short' }
+                  );
                   return (
                     <div
                       key={d.date}
-                      className={`rounded-xl border px-1 py-3 text-center ${isToday
-                        ? 'border-[var(--color-brand-500)] bg-[var(--color-brand-600)]/10'
-                        : 'border-[var(--color-border)] bg-[var(--color-surface)]'
-                        }`}
+                      className={`rounded-xl border px-1 py-3 text-center ${
+                        isToday
+                          ? 'border-[var(--color-brand-500)] bg-[var(--color-brand-600)]/10'
+                          : 'border-[var(--color-border)] bg-[var(--color-surface)]'
+                      }`}
                     >
                       <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
                         {label}
@@ -357,7 +360,9 @@ export default function Dashboard() {
                       <p
                         className="mt-1.5 font-display text-lg font-semibold"
                         style={{
-                          color: d.grade ? GRADE_COLORS[d.grade] : 'var(--color-text-muted)'
+                          color: d.grade
+                            ? GRADE_COLORS[d.grade]
+                            : 'var(--color-text-muted)'
                         }}
                       >
                         {d.netScore ?? '—'}
@@ -377,7 +382,9 @@ export default function Dashboard() {
             overallStreak={overallStreak}
             weekly={weekly}
           />
+
           <ActivityHeatmap weeks={53} />
+
           <CollapsibleSection
             title="Streak visualization"
             subtitle="Week activity + habit bars"
@@ -398,7 +405,6 @@ export default function Dashboard() {
       {/* INSIGHTS */}
       {tab === 'insights' && (
         <div role="tabpanel" className="space-y-4">
-          {/* USP first: replacement separate from daily grade */}
           <ReplacementFocusCard focus={replacementFocus} />
           <PersonalFocusCard focus={personalFocus} />
 
@@ -462,10 +468,13 @@ export default function Dashboard() {
                   </p>
                   <p className="mt-1 font-display text-sm font-semibold text-[var(--color-text)]">
                     {records.firstAGradeDate
-                      ? new Date(records.firstAGradeDate + 'T12:00:00').toLocaleDateString(
-                        'en-PK',
-                        { month: 'short', day: 'numeric', year: 'numeric' }
-                      )
+                      ? new Date(
+                          records.firstAGradeDate + 'T12:00:00'
+                        ).toLocaleDateString('en-PK', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric'
+                        })
                       : '—'}
                   </p>
                 </div>
@@ -527,7 +536,9 @@ export default function Dashboard() {
                       </p>
                       <p
                         className="mt-1 font-display text-xl font-semibold"
-                        style={{ color: rateColor(p.stats?.successRate || 0) }}
+                        style={{
+                          color: rateColor(p.stats?.successRate || 0)
+                        }}
                       >
                         {p.stats?.successRate ?? 0}%
                       </p>

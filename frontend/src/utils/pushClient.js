@@ -25,12 +25,19 @@ export async function enablePush() {
   const key = data.publicKey || data.data?.publicKey;
   if (!key) throw new Error('Missing VAPID public key');
 
-  const subscription = await reg.pushManager.subscribe({
-    userVisibleOnly: true,
-    applicationServerKey: urlBase64ToUint8Array(key)
-  });
+  let subscription = await reg.pushManager.getSubscription();
+  if (!subscription) {
+    subscription = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(key)
+    });
+  }
 
   await api.post('/push/subscribe', subscription.toJSON());
+
+  // Actually deliver a notification (subscribe alone does not)
+  await api.post('/push/test');
+
   return true;
 }
 
@@ -41,6 +48,6 @@ export async function disablePush() {
   try {
     await api.delete('/push/subscribe');
   } catch (_) {
-    /* still clear local */
+    /* ignore */
   }
 }

@@ -30,4 +30,24 @@ const unsubscribe = async (req, res, next) => {
   }
 };
 
-module.exports = { getVapidPublic, subscribe, unsubscribe };
+const sendTest = async (req, res, next) => {
+  try {
+    const result = await pushService.sendToUser(req.user._id, {
+      title: 'LifeTracker',
+      body: 'Push is working. You will get log reminders here.',
+      url: '/log'
+    });
+    if (!result.sent) {
+      return res.status(400).json({
+        success: false,
+        message: result.reason || 'Push not sent',
+        ...result
+      });
+    }
+    return success(res, { message: 'Test notification sent', ...result });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { getVapidPublic, subscribe, unsubscribe, sendTest };

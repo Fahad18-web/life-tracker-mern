@@ -44,21 +44,21 @@ const INITIAL_BAD = {
 };
 
 const GOOD_META = {
-  morning: { label: 'Morning Routine', icon: Sun },
+  morning: { label: 'Morning routine', icon: Sun },
   exercise: { label: 'Exercise', icon: Dumbbell },
-  reading: { label: 'Quran & Reading', icon: BookOpen },
-  prayer: { label: 'Daily Prayer', icon: Hand },
+  reading: { label: 'Quran & reading', icon: BookOpen },
+  prayer: { label: 'Daily prayer', icon: Hand },
   coding: { label: 'Coding', icon: Code2 },
-  sleep: { label: 'Quality Sleep', icon: Moon },
-  diet: { label: 'Healthy Diet', icon: Salad },
+  sleep: { label: 'Quality sleep', icon: Moon },
+  diet: { label: 'Healthy diet', icon: Salad },
   hydration: { label: 'Hydration', icon: Droplets }
 };
 
 const BAD_META = {
-  social: { label: 'Social Media', icon: Smartphone },
+  social: { label: 'Social media', icon: Smartphone },
   procrastination: { label: 'Procrastination', icon: Clock3 },
-  junk: { label: 'Junk Food', icon: Pizza },
-  late: { label: 'Sleeping Late', icon: AlarmClock },
+  junk: { label: 'Junk food', icon: Pizza },
+  late: { label: 'Sleeping late', icon: AlarmClock },
   fajr: { label: 'Missing Fajr', icon: Mosque }
 };
 
@@ -70,8 +70,12 @@ function calcScore(good, bad, customHabits, customStates) {
 
   const customGoodTotal = customHabits.filter((h) => h.type === 'good').length;
   const customBadTotal = customHabits.filter((h) => h.type === 'bad').length;
-  const customGoodDone = customHabits.filter((h) => h.type === 'good' && customStates[h._id]).length;
-  const customBadDone = customHabits.filter((h) => h.type === 'bad' && customStates[h._id]).length;
+  const customGoodDone = customHabits.filter(
+    (h) => h.type === 'good' && customStates[h._id]
+  ).length;
+  const customBadDone = customHabits.filter(
+    (h) => h.type === 'bad' && customStates[h._id]
+  ).length;
 
   const totalGood = goodKeys.length + customGoodTotal;
   const totalBad = badKeys.length + customBadTotal;
@@ -93,12 +97,13 @@ function HabitChip({ active, bad = false, onClick, children }) {
     <button
       type="button"
       onClick={onClick}
-      className={`flex items-center gap-2.5 rounded-xl border px-3.5 py-3 text-left text-sm transition ${active
+      className={`flex min-w-0 items-center gap-2.5 rounded-[var(--radius-control)] border px-3.5 py-3 text-left text-sm transition ${
+        active
           ? bad
             ? 'border-[var(--color-danger)]/40 bg-[var(--color-danger)]/10 text-[var(--color-danger)]'
             : 'border-[var(--color-success)]/40 bg-[var(--color-success)]/10 text-[var(--color-success)]'
-          : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-hover)] hover:text-[var(--color-text)]'
-        }`}
+          : 'border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-hover)] hover:text-[var(--color-text)]'
+      }`}
     >
       {children}
     </button>
@@ -141,13 +146,20 @@ export default function Log() {
         setExistingId(e._id);
 
         const savedMap = Object.fromEntries(
-          (e.customHabits || []).map((h) => [h.habitId?.toString(), h.completed])
+          (e.customHabits || []).map((h) => [
+            h.habitId?.toString(),
+            h.completed
+          ])
         );
         setCustomStates(
-          Object.fromEntries(habits.map((h) => [h._id, savedMap[h._id] ?? false]))
+          Object.fromEntries(
+            habits.map((h) => [h._id, savedMap[h._id] ?? false])
+          )
         );
       } else {
-        setCustomStates(Object.fromEntries(habits.map((h) => [h._id, false])));
+        setCustomStates(
+          Object.fromEntries(habits.map((h) => [h._id, false]))
+        );
       }
     } catch {
       // ignore
@@ -187,7 +199,7 @@ export default function Log() {
         customHabits: customHabitsPayload
       });
 
-      toast.success(existingId ? 'Entry updated ✓' : 'Entry saved ✓');
+      toast.success(existingId ? 'Entry updated' : 'Entry saved');
       markLogged();
       navigate('/dashboard');
     } catch {
@@ -198,25 +210,27 @@ export default function Log() {
   };
 
   if (loading) {
-    return <div className="page-loader">Loading today's log…</div>;
+    return <div className="page-loader">Loading today&apos;s log…</div>;
   }
 
   const customGood = customHabits.filter((h) => h.type === 'good');
   const customBad = customHabits.filter((h) => h.type === 'bad');
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+    <div className="space-y-[var(--space-section)] pb-8">
+      {/* Header + live score */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="mb-1 inline-flex items-center gap-2 text-[var(--color-brand-400)]">
             <NotebookPen className="h-4 w-4" />
-            <span className="text-xs font-semibold uppercase tracking-wider">Daily Log</span>
+            <span className="text-xs font-semibold uppercase tracking-wider">
+              Daily log
+            </span>
           </div>
           <h1 className="font-display text-2xl font-semibold tracking-tight text-[var(--color-text)] sm:text-3xl">
-            Today's Log
+            Today&apos;s log
           </h1>
-          <p className="mt-1 text-sm text-[var(--color-text-muted)]">
+          <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
             {new Date().toLocaleDateString('en-PK', {
               weekday: 'long',
               year: 'numeric',
@@ -224,26 +238,32 @@ export default function Log() {
               day: 'numeric'
             })}
           </p>
+          <p className="lt-help mt-1 max-w-md">
+            Check what you did. Be honest — the score is a mirror, not a prize.
+          </p>
         </div>
 
-        {/* Live score */}
-        <div className="mt-3 flex items-center justify-between gap-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 sm:mt-0 sm:min-w-[180px] sm:flex-col sm:items-end">
+        <div className="flex shrink-0 items-center justify-between gap-4 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 sm:min-w-[160px] sm:flex-col sm:items-end">
           <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-muted)]">
-              Live Score
+            <p className="text-[11px] font-medium text-[var(--color-text-muted)]">
+              Live score
             </p>
-            <p className="text-xs text-[var(--color-text-secondary)]">Updates as you check</p>
+            <p className="text-xs text-[var(--color-text-secondary)]">
+              Updates as you check
+            </p>
           </div>
-          <p className={`font-display text-3xl font-semibold ${scoreColor(score)}`}>{score}</p>
+          <p className={`font-display text-3xl font-semibold ${scoreColor(score)}`}>
+            {score}
+          </p>
         </div>
       </div>
+
       <ReplacementCoach good={good} bad={bad} customStates={customStates} />
+
       {/* Good habits */}
-      <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 sm:p-5">
-        <h2 className="mb-3 text-sm font-semibold text-[var(--color-text)]">
-          Good Habits{' '}
-          <span className="font-normal text-[var(--color-text-muted)]">— what you did</span>
-        </h2>
+      <section className="lt-card">
+        <h2 className="lt-title">Good habits</h2>
+        <p className="lt-help mb-3">What you did today</p>
         <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
           {Object.keys(INITIAL_GOOD).map((key) => {
             const Icon = GOOD_META[key].icon;
@@ -263,7 +283,7 @@ export default function Log() {
         {customGood.length > 0 && (
           <>
             <p className="mb-2 mt-4 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
-              Custom Good
+              Your good habits
             </p>
             <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
               {customGood.map((h) => (
@@ -282,11 +302,9 @@ export default function Log() {
       </section>
 
       {/* Bad habits */}
-      <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 sm:p-5">
-        <h2 className="mb-3 text-sm font-semibold text-[var(--color-text)]">
-          Bad Habits{' '}
-          <span className="font-normal text-[var(--color-text-muted)]">— what you slipped on</span>
-        </h2>
+      <section className="lt-card">
+        <h2 className="lt-title">Hard moments</h2>
+        <p className="lt-help mb-3">What you slipped on — no shame, just data</p>
         <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
           {Object.keys(INITIAL_BAD).map((key) => {
             const Icon = BAD_META[key].icon;
@@ -307,7 +325,7 @@ export default function Log() {
         {customBad.length > 0 && (
           <>
             <p className="mb-2 mt-4 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
-              Custom Bad
+              Your hard habits
             </p>
             <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
               {customBad.map((h) => (
@@ -327,18 +345,22 @@ export default function Log() {
       </section>
 
       {/* Mood */}
-      <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 sm:p-5">
-        <h2 className="mb-3 text-sm font-semibold text-[var(--color-text)]">Mood</h2>
+      <section className="lt-card">
+        <h2 className="lt-title">Mood</h2>
+        <p className="lt-help mb-3">How the day felt overall</p>
         <div className="flex flex-wrap gap-2">
           {[1, 2, 3, 4, 5].map((n) => (
             <button
               key={n}
               type="button"
               onClick={() => setMood(n)}
-              className={`flex h-12 w-12 items-center justify-center rounded-xl border text-xl transition ${mood === n
-                  ? 'border-[var(--color-brand-500)] bg-[var(--color-brand-600)]/15 scale-105'
+              aria-label={`Mood ${n} of 5`}
+              aria-pressed={mood === n}
+              className={`flex h-12 w-12 items-center justify-center rounded-[var(--radius-control)] border text-xl transition ${
+                mood === n
+                  ? 'scale-105 border-[var(--color-brand-500)] bg-[var(--color-brand-600)]/15'
                   : 'border-[var(--color-border)] bg-[var(--color-bg)] hover:border-[var(--color-border-hover)]'
-                }`}
+              }`}
             >
               {['😞', '😕', '😐', '🙂', '😄'][n - 1]}
             </button>
@@ -347,17 +369,21 @@ export default function Log() {
       </section>
 
       {/* Notes */}
-      <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 sm:p-5">
-        <h2 className="mb-3 text-sm font-semibold text-[var(--color-text)]">
-          Notes <span className="font-normal text-[var(--color-text-muted)]">(optional)</span>
+      <section className="lt-card">
+        <h2 className="lt-title">
+          Notes{' '}
+          <span className="font-normal text-[var(--color-text-muted)]">
+            (optional)
+          </span>
         </h2>
+        <p className="lt-help mb-3">One line is enough</p>
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           maxLength={1000}
           rows={4}
-          placeholder="How was your day? Any reflections…"
-          className="w-full resize-y rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] px-3.5 py-3 text-sm text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] outline-none transition focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20"
+          placeholder="What mattered today?"
+          className="w-full min-w-0 resize-y rounded-[var(--radius-control)] border border-[var(--color-border)] bg-[var(--color-bg)] px-3.5 py-3 text-sm text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] outline-none transition focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20"
         />
         <p className="mt-1.5 text-right text-xs text-[var(--color-text-muted)]">
           {notes.length}/1000
@@ -369,9 +395,9 @@ export default function Log() {
         type="button"
         onClick={handleSave}
         disabled={saving}
-        className="w-full rounded-xl bg-[var(--color-brand-600)] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[var(--color-brand-500)] disabled:cursor-not-allowed disabled:opacity-50"
+        className="w-full rounded-[var(--radius-control)] bg-[var(--color-brand-600)] px-4 py-3.5 text-sm font-semibold text-white transition hover:bg-[var(--color-brand-500)] disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {saving ? 'Saving…' : existingId ? '✓ Update Entry' : '✓ Save Entry'}
+        {saving ? 'Saving…' : existingId ? 'Update entry' : 'Save entry'}
       </button>
     </div>
   );

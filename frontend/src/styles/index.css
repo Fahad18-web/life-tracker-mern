@@ -1,48 +1,44 @@
 @import "tailwindcss";
 
 :root {
+  /* fonts — pehle jaisa */
   --font-sans: "Outfit", system-ui, sans-serif;
   --font-display: "Capriola", system-ui, sans-serif;
 
- --color-brand-50: #eefbf6;
-  --color-brand-100: #d4f5e8;
-  --color-brand-200: #a9e9d1;
-  --color-brand-300: #6fd4b3;
-  --color-brand-400: #36b892;
-  --color-brand-500: #1a9a76;
-  --color-brand-600: #137b5f;
-  --color-brand-700: #11624c;
-  --color-brand-800: #104f3f;
-  --color-brand-900: #0e4135;
+  /* brand-50…900 — apna current teal/ocean rehne do */
 
-  --color-bg: #0b0d0c;
-  --color-surface: #121615;
-  --color-surface-2: #1a201e;
- --color-border: #2f3835;
-  --color-border-hover: #3d4844;
+  --color-bg: #0a0c0b;
+  --color-surface: #121614;
+  --color-surface-2: #1a1f1d;
 
-  /* Readable ladder */
-  --color-text: #f3f6f4;
-  /* primary — strongest */
-  --color-text-secondary: #b4c0ba;
-  /* was ~#9aa8a2 — bump */
-  --color-text-muted: #8b9690;
-  /* was ~#6b7872 — bump */
+  --color-border: #2a322f;
+  --color-border-hover: #3a433f;
 
- --color-success: #3dd68c;
+  --color-text: #f2f5f3;
+  --color-text-secondary: #b0bcb6;
+  --color-text-muted: #8a9590;
+
+  --color-success: #3dd68c;
   --color-danger: #f07178;
   --color-warning: #e6b84d;
+
+  /* design pass 1 — rhythm */
+  --radius-card: 1rem;
+  --radius-control: 0.75rem;
+  --space-section: 1.25rem;
 }
 
 [data-theme="light"] {
- --color-bg: #f4f6f5;
+  --color-bg: #f3f5f4;
   --color-surface: #ffffff;
-  --color-surface-2: #e8eeeb;
- --color-border: #d0dad5;
-  --color-border-hover: #b8c5bf;
-  --color-text: #0f1412;
-  --color-text-secondary: #3d4a45;
-  --color-text-muted: #5c6b65;
+  --color-surface-2: #e9eeeb;
+
+  --color-border: #d2dcd7;
+  --color-border-hover: #b9c5bf;
+
+  --color-text: #0e1311;
+  --color-text-secondary: #3a4742;
+  --color-text-muted: #5a6862;
 }
 
 html,
@@ -390,4 +386,43 @@ button.hm-cell {
 
 [data-theme='light'] .hm-l0 {
   background: #ebedf0;
+}
+
+
+/* Design pass 1 — shared surfaces */
+.lt-card {
+  border-radius: var(--radius-card);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  padding: 1.1rem 1.15rem;
+}
+
+.lt-card-muted {
+  border-radius: var(--radius-card);
+  border: 1px dashed var(--color-border);
+  background: color-mix(in srgb, var(--color-surface) 80%, transparent);
+  padding: 1.25rem 1.15rem;
+}
+
+.lt-section-label {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.lt-title {
+  margin: 0.15rem 0 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.lt-help {
+  margin: 0.35rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--color-text-secondary);
 }

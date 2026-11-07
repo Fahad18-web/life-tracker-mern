@@ -8,6 +8,7 @@ import ProtectedRoute from './components/ui/ProtectedRoute';
 import Header from './components/layout/Header';
 import NotificationBanner from './components/ui/NotificationBanner';
 import EmailVerifyBanner from './components/ui/EmailVerifyBanner';
+import WhatsNew from './components/WhatsNew';
 
 const CheckEmail = lazy(() => import('./pages/auth/CheckEmail'));
 const VerifyEmail = lazy(() => import('./pages/auth/VerifyEmail'));
@@ -34,6 +35,7 @@ function AppLayout({ children }) {
   return (
     <>
       <Header />
+      <WhatsNew />
       <EmailVerifyBanner />
       <NotificationBanner />
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
