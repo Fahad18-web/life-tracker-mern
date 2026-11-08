@@ -1,7 +1,17 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Eye, EyeOff, User, Lock, Trash2 } from 'lucide-react';
+import {
+  Eye,
+  EyeOff,
+  User,
+  Lock,
+  Trash2,
+  CalendarDays,
+  ShieldAlert,
+  Sparkles
+} from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchProfile, updateProfile, changePassword, deleteAccount } from '../api/userAPI';
 import Avatar from '../components/Avatar';
@@ -142,80 +152,107 @@ export default function Profile() {
   const initials = profile?.name?.charAt(0)?.toUpperCase() || 'U';
 
   const inputClass =
-    'w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] px-3.5 py-2.5 text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20';
+    'w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] px-3.5 py-2.5 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20';
 
   return (
     <div className="space-y-6">
+      {/* Page Header */}
       <div>
         <div className="mb-1 inline-flex items-center gap-2 text-[var(--color-brand-400)]">
           <User className="h-4 w-4" />
           <span className="text-xs font-semibold uppercase tracking-wider">Profile</span>
         </div>
+
         <h1 className="font-display text-2xl font-semibold tracking-tight text-[var(--color-text)] sm:text-3xl">
           My Profile
         </h1>
+
         <p className="mt-1 text-sm text-[var(--color-text-muted)]">
           Manage your account and view progress stats.
         </p>
       </div>
 
-      {/* Avatar card */}
-      <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
-        <div className="flex items-center gap-4">
-          <Avatar avatar={profile?.avatar} name={profile?.name} size={64} />
-          <div>
-            <p className="text-lg font-semibold text-[var(--color-text)]">{profile?.name}</p>
-            <p className="text-sm text-[var(--color-text-secondary)]">{profile?.email}</p>
-            <p className="mt-0.5 text-xs text-[var(--color-text-muted)]">
-              Member since {joinedDate}
+      {/* Profile Overview */}
+      <section className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]">
+        <div className="p-5 sm:p-6">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="rounded-full border-2 border-[var(--color-brand-500)]/30 p-1">
+              <Avatar avatar={profile?.avatar} name={profile?.name} size={64} />
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <p className="text-lg font-semibold text-[var(--color-text)]">
+                {profile?.name}
+              </p>
+
+              <p className="break-all text-sm text-[var(--color-text-secondary)]">
+                {profile?.email}
+              </p>
+
+              <div className="mt-2 inline-flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]">
+                <CalendarDays className="h-3.5 w-3.5" />
+                Member since {joinedDate}
+              </div>
+            </div>
+
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-success)]/30 bg-[var(--color-success)]/10 px-3 py-1.5">
+              <Sparkles className="h-3.5 w-3.5 text-[var(--color-success)]" />
+              <span className="text-xs font-medium text-[var(--color-success)]">
+                LifeTracker Member
+              </span>
+            </div>
+          </div>
+
+          <div className="mt-6 border-t border-[var(--color-border)] pt-5">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
+              Choose avatar
             </p>
+
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                title="Use initials"
+                onClick={() => handleAvatarSelect(null)}
+                className={`flex h-11 w-11 items-center justify-center rounded-full border text-xs font-bold transition ${
+                  !profile?.avatar
+                    ? 'border-[var(--color-brand-500)] bg-[var(--color-brand-600)]/15 text-[var(--color-brand-400)] ring-2 ring-[var(--color-brand-500)]/20'
+                    : 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-brand-500)]'
+                }`}
+              >
+                {initials}
+              </button>
+
+              {AVATAR_PRESETS.map((p) => {
+                const active = profile?.avatar === p.id;
+
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    title={p.label}
+                    onClick={() => handleAvatarSelect(p.id)}
+                    className={`rounded-full border p-0.5 transition ${
+                      active
+                        ? 'border-[var(--color-brand-500)] ring-2 ring-[var(--color-brand-500)]/40'
+                        : 'border-[var(--color-border)] hover:border-[var(--color-brand-500)]'
+                    }`}
+                  >
+                    <Avatar avatar={p.id} name={p.label} size={40} />
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
+      </section>
 
-        <div className="mt-4">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
-            Choose avatar
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              title="Use initials"
-              onClick={() => handleAvatarSelect(null)}
-              className={`flex h-11 w-11 items-center justify-center rounded-full border text-xs font-bold transition ${
-                !profile?.avatar
-                  ? 'border-[var(--color-brand-500)] bg-[var(--color-brand-600)]/15 text-[var(--color-brand-400)]'
-                  : 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-border-hover)]'
-              }`}
-            >
-              {initials}
-            </button>
-
-            {AVATAR_PRESETS.map((p) => {
-              const active = profile?.avatar === p.id;
-              return (
-                <button
-                  key={p.id}
-                  type="button"
-                  title={p.label}
-                  onClick={() => handleAvatarSelect(p.id)}
-                  className={`rounded-full border p-0.5 transition ${
-                    active
-                      ? 'border-[var(--color-brand-500)] ring-2 ring-[var(--color-brand-500)]/40'
-                      : 'border-[var(--color-border)] hover:border-[var(--color-border-hover)]'
-                  }`}
-                >
-                  <Avatar avatar={p.id} name={p.label} size={40} />
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* Stats */}
+      {/* Account Statistics */}
       {stats && (
         <section>
-          <h2 className="mb-3 text-sm font-semibold text-[var(--color-text)]">Account Stats</h2>
+          <h2 className="mb-3 text-sm font-semibold text-[var(--color-text)]">
+            Account Stats
+          </h2>
+
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             {[
               { label: 'Total Entries', value: stats.totalEntries, sub: 'days logged' },
@@ -239,24 +276,31 @@ export default function Profile() {
             ].map((s) => (
               <div
                 key={s.label}
-                className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4"
+                className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 transition-colors hover:border-[var(--color-brand-500)]/40"
               >
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
                   {s.label}
                 </p>
+
                 <p className="mt-2 font-display text-2xl font-semibold text-[var(--color-text)]">
                   {s.value ?? '—'}
                 </p>
-                {s.sub && <p className="mt-1 text-xs text-[var(--color-text-muted)]">{s.sub}</p>}
+
+                {s.sub && (
+                  <p className="mt-1 text-xs text-[var(--color-text-muted)]">
+                    {s.sub}
+                  </p>
+                )}
               </div>
             ))}
           </div>
 
           {stats.gradeCounts && Object.keys(stats.gradeCounts).length > 0 && (
             <div className="mt-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
-              <p className="mb-2 text-sm font-medium text-[var(--color-text-secondary)]">
+              <p className="mb-3 text-sm font-medium text-[var(--color-text-secondary)]">
                 Grade Distribution
               </p>
+
               <div className="flex flex-wrap gap-2">
                 {['A', 'B', 'C', 'D', 'F'].map(
                   (g) =>
@@ -270,7 +314,8 @@ export default function Profile() {
                           background: `${GRADE_COLORS[g]}18`
                         }}
                       >
-                        {g} <span className="opacity-80">× {stats.gradeCounts[g]}</span>
+                        {g}
+                        <span className="opacity-80">× {stats.gradeCounts[g]}</span>
                       </span>
                     )
                 )}
@@ -280,9 +325,20 @@ export default function Profile() {
         </section>
       )}
 
+      {/* Account Settings */}
       <div className="grid gap-4 lg:grid-cols-2">
+        {/* Edit Profile */}
         <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
-          <h2 className="mb-4 text-sm font-semibold text-[var(--color-text)]">Edit Profile</h2>
+          <div className="mb-5 flex items-center gap-3 border-b border-[var(--color-border)] pb-4">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-brand-500)]/10">
+              <User className="h-5 w-5 text-[var(--color-brand-400)]" />
+            </div>
+
+            <h2 className="text-sm font-semibold text-[var(--color-text)]">
+              Edit Profile
+            </h2>
+          </div>
+
           <form onSubmit={handleEditSave} className="space-y-4">
             <div>
               <label
@@ -291,6 +347,7 @@ export default function Profile() {
               >
                 Full Name
               </label>
+
               <input
                 id="profile-name"
                 name="name"
@@ -302,6 +359,7 @@ export default function Profile() {
                 className={inputClass}
               />
             </div>
+
             <div>
               <label
                 htmlFor="profile-email"
@@ -309,6 +367,7 @@ export default function Profile() {
               >
                 Email
               </label>
+
               <input
                 id="profile-email"
                 name="email"
@@ -319,20 +378,29 @@ export default function Profile() {
                 className={inputClass}
               />
             </div>
+
             <button
               type="submit"
               disabled={editSaving}
-              className="w-full rounded-xl bg-[var(--color-brand-600)] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+              className="w-full rounded-xl bg-[var(--color-brand-600)] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--color-brand-500)] disabled:opacity-50"
             >
               {editSaving ? 'Saving…' : 'Save Changes'}
             </button>
           </form>
         </section>
 
+        {/* Change Password */}
         <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
-          <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-[var(--color-text)]">
-            <Lock className="h-4 w-4" /> Change Password
-          </h2>
+          <div className="mb-5 flex items-center gap-3 border-b border-[var(--color-border)] pb-4">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-brand-500)]/10">
+              <Lock className="h-5 w-5 text-[var(--color-brand-400)]" />
+            </div>
+
+            <h2 className="text-sm font-semibold text-[var(--color-text)]">
+              Change Password
+            </h2>
+          </div>
+
           <form onSubmit={handlePassSave} className="space-y-4">
             {[
               { key: 'currentPassword', label: 'Current Password', vis: 'current' },
@@ -346,6 +414,7 @@ export default function Profile() {
                 >
                   {f.label}
                 </label>
+
                 <div className="relative">
                   <input
                     id={`pass-${f.vis}`}
@@ -360,12 +429,13 @@ export default function Profile() {
                       f.key === 'currentPassword' ? 'current-password' : 'new-password'
                     }
                   />
+
                   <button
                     type="button"
                     onClick={() =>
                       setPassVisible((p) => ({ ...p, [f.vis]: !p[f.vis] }))
                     }
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-brand-400)]"
                     aria-label="Toggle password"
                   >
                     {passVisible[f.vis] ? (
@@ -375,15 +445,17 @@ export default function Profile() {
                     )}
                   </button>
                 </div>
+
                 {f.key === 'newPassword' && (
                   <PasswordStrength password={passForm.newPassword} />
                 )}
               </div>
             ))}
+
             <button
               type="submit"
               disabled={passSaving}
-              className="w-full rounded-xl bg-[var(--color-brand-600)] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+              className="w-full rounded-xl bg-[var(--color-brand-600)] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--color-brand-500)] disabled:opacity-50"
             >
               {passSaving ? 'Saving…' : 'Update Password'}
             </button>
@@ -391,52 +463,68 @@ export default function Profile() {
         </section>
       </div>
 
-      <section className="rounded-2xl border border-[var(--color-danger)]/30 bg-[var(--color-danger)]/5 p-5">
-        <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold text-[var(--color-danger)]">
-          <Trash2 className="h-4 w-4" /> Danger Zone
-        </h2>
-        <p className="mb-4 text-sm text-[var(--color-text-secondary)]">
-          Deleting your account permanently removes all entries, habits, and data. This cannot be
-          undone.
-        </p>
-
-        {!deleteConfirm ? (
-          <button
-            type="button"
-            onClick={() => setDeleteConfirm(true)}
-            className="rounded-xl border border-[var(--color-danger)]/40 px-4 py-2 text-sm font-semibold text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10"
-          >
-            Delete Account
-          </button>
-        ) : (
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <input
-              type="password"
-              placeholder="Enter password to confirm"
-              value={deletePass}
-              onChange={(e) => setDeletePass(e.target.value)}
-              className={inputClass}
-            />
-            <button
-              type="button"
-              disabled={deleteLoading}
-              onClick={handleDelete}
-              className="rounded-xl bg-[var(--color-danger)] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
-            >
-              {deleteLoading ? 'Deleting…' : 'Confirm Delete'}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setDeleteConfirm(false);
-                setDeletePass('');
-              }}
-              className="rounded-xl border border-[var(--color-border)] px-4 py-2.5 text-sm font-semibold text-[var(--color-text-secondary)]"
-            >
-              Cancel
-            </button>
+      {/* Danger Zone */}
+      <section className="overflow-hidden rounded-2xl border border-[var(--color-danger)]/30 bg-[var(--color-surface)]">
+        <div className="flex items-center gap-3 border-b border-[var(--color-danger)]/20 bg-[var(--color-danger)]/5 px-5 py-4">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--color-danger)]/10">
+            <ShieldAlert className="h-5 w-5 text-[var(--color-danger)]" />
           </div>
-        )}
+
+          <h2 className="text-sm font-semibold text-[var(--color-danger)]">
+            Danger Zone
+          </h2>
+        </div>
+
+        <div className="p-5">
+          <div className="mb-4 flex items-start gap-3">
+            <Trash2 className="mt-0.5 h-4 w-4 shrink-0 text-[var(--color-danger)]" />
+
+            <p className="text-sm text-[var(--color-text-secondary)]">
+              Deleting your account permanently removes all entries, habits, and data. This cannot be
+              undone.
+            </p>
+          </div>
+
+          {!deleteConfirm ? (
+            <button
+              type="button"
+              onClick={() => setDeleteConfirm(true)}
+              className="rounded-xl border border-[var(--color-danger)]/40 px-4 py-2 text-sm font-semibold text-[var(--color-danger)] transition hover:bg-[var(--color-danger)]/10"
+            >
+              Delete Account
+            </button>
+          ) : (
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <input
+                type="password"
+                placeholder="Enter password to confirm"
+                value={deletePass}
+                onChange={(e) => setDeletePass(e.target.value)}
+                className={inputClass}
+              />
+
+              <button
+                type="button"
+                disabled={deleteLoading}
+                onClick={handleDelete}
+                className="shrink-0 rounded-xl bg-[var(--color-danger)] px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+              >
+                {deleteLoading ? 'Deleting…' : 'Confirm Delete'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setDeleteConfirm(false);
+                  setDeletePass('');
+                }}
+                className="shrink-0 rounded-xl border border-[var(--color-border)] px-4 py-2.5 text-sm font-semibold text-[var(--color-text-secondary)] transition hover:bg-[var(--color-bg)]"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+        </div>
       </section>
     </div>
   );

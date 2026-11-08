@@ -426,3 +426,396 @@ button.hm-cell {
   line-height: 1.45;
   color: var(--color-text-secondary);
 }
+
+
+
+
+/* =========================================
+   LIFETRACKER — DASHBOARD UI POLISH
+   ========================================= */
+
+.dashboard-page {
+  min-width: 0;
+  animation: dashboard-enter 0.35s ease-out;
+}
+
+@keyframes dashboard-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Dashboard header */
+
+.dashboard-heading {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.dashboard-heading::after {
+  content: "";
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  right: -65px;
+  top: -85px;
+  border-radius: 50%;
+  background: var(--color-brand-500);
+  opacity: 0.07;
+  filter: blur(45px);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Streak indicator */
+
+.dashboard-streak {
+  border: 1px solid var(--color-brand-500);
+  border-color: color-mix(
+    in srgb,
+    var(--color-brand-500) 25%,
+    transparent
+  );
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.dashboard-streak:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+/* Dashboard tabs */
+
+.dashboard-tabs {
+  position: relative;
+  display: flex;
+  gap: 5px;
+  padding: 5px;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface);
+}
+
+.dashboard-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 12px;
+  padding: 11px 14px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.dashboard-tab:hover {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.dashboard-tab.active {
+  background: var(--color-brand-600);
+  color: white;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+}
+
+/* Dashboard stat cards */
+
+.dashboard-stat {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.dashboard-stat:hover {
+  transform: translateY(-3px);
+  border-color: var(--color-brand-500);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.06);
+}
+
+/* Progress streak panel */
+
+.dashboard-streak-panel {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--color-brand-500);
+  border-color: color-mix(
+    in srgb,
+    var(--color-brand-500) 25%,
+    transparent
+  );
+  border-radius: 18px;
+  background: color-mix(
+    in srgb,
+    var(--color-brand-600) 9%,
+    var(--color-surface)
+  );
+}
+
+/* Weekly progress cards */
+
+.dashboard-week-card {
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.dashboard-week-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-brand-500);
+}
+
+.dashboard-week-card.is-today {
+  border-color: var(--color-brand-500);
+  background: color-mix(
+    in srgb,
+    var(--color-brand-600) 9%,
+    var(--color-surface)
+  );
+}
+
+/* General dashboard surfaces */
+
+.dashboard-page .lt-card,
+.dashboard-page .lt-card-muted {
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.dashboard-page a {
+  transition:
+    color 0.2s ease,
+    background 0.2s ease;
+}
+
+/* Loading animation */
+
+.dashboard-page .dashboard-skeleton {
+  animation: dashboard-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes dashboard-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.45;
+  }
+}
+
+/* Responsive adjustments */
+
+@media (max-width: 640px) {
+  .dashboard-page {
+    gap: 16px;
+  }
+
+  .dashboard-tabs {
+    gap: 3px;
+    padding: 4px;
+  }
+
+  .dashboard-tab {
+    gap: 5px;
+    padding: 10px 6px;
+  }
+
+  .dashboard-streak {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Accessibility: reduced motion */
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-page,
+  .dashboard-page *,
+  .dashboard-page *::before,
+  .dashboard-page *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ================================
+   Dashboard Welcome Header
+================================ */
+
+.dashboard-welcome {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 4px 0 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.dashboard-welcome-content {
+  min-width: 0;
+}
+
+.dashboard-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 9px;
+  color: var(--color-brand-400);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+}
+
+.dashboard-eyebrow-dot {
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--color-brand-400);
+  box-shadow: 0 0 10px var(--color-brand-400);
+}
+
+.dashboard-date {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 9px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.dashboard-date svg {
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.dashboard-welcome-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.dashboard-current-streak {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  white-space: nowrap;
+  transition: border-color 0.2s ease;
+}
+
+.dashboard-current-streak:hover {
+  border-color: var(--color-brand-500);
+}
+
+.dashboard-current-streak svg {
+  color: var(--color-brand-400);
+}
+
+.dashboard-current-streak strong {
+  color: var(--color-text);
+  font-size: 14px;
+}
+
+.dashboard-current-streak small {
+  color: var(--color-text-muted);
+  font-size: 10px;
+}
+
+.dashboard-log-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 11px 17px;
+  border-radius: 999px;
+  background: var(--color-brand-600);
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.dashboard-log-button:hover {
+  background: var(--color-brand-500);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 18px rgba(0, 150, 200, 0.2);
+}
+
+.dashboard-log-button svg {
+  transition: transform 0.2s ease;
+}
+
+.dashboard-log-button:hover svg {
+  transform: translateX(3px);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .dashboard-welcome {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .dashboard-welcome-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .dashboard-current-streak {
+    padding: 9px 12px;
+  }
+
+  .dashboard-log-button {
+    padding: 10px 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-current-streak,
+  .dashboard-log-button,
+  .dashboard-log-button svg {
+    transition: none;
+  }
+}

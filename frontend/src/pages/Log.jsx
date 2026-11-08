@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -15,7 +16,8 @@ import {
   Pizza,
   AlarmClock,
   Mosque,
-  NotebookPen
+  NotebookPen,
+  Check
 } from 'lucide-react';
 import { fetchEntryDate, saveEntry } from '../api/entriesAPI';
 import { fetchCustomHabits } from '../api/customHabitsAPI';
@@ -65,22 +67,32 @@ const BAD_META = {
 function calcScore(good, bad, customHabits, customStates) {
   const goodKeys = Object.keys(good);
   const badKeys = Object.keys(bad);
+
   const goodDone = goodKeys.filter((k) => good[k]).length;
   const badDone = badKeys.filter((k) => bad[k]).length;
 
   const customGoodTotal = customHabits.filter((h) => h.type === 'good').length;
   const customBadTotal = customHabits.filter((h) => h.type === 'bad').length;
+
   const customGoodDone = customHabits.filter(
     (h) => h.type === 'good' && customStates[h._id]
   ).length;
+
   const customBadDone = customHabits.filter(
     (h) => h.type === 'bad' && customStates[h._id]
   ).length;
 
   const totalGood = goodKeys.length + customGoodTotal;
   const totalBad = badKeys.length + customBadTotal;
-  const gs = totalGood > 0 ? ((goodDone + customGoodDone) / totalGood) * 100 : 0;
-  const bs = totalBad > 0 ? ((badDone + customBadDone) / totalBad) * 100 : 0;
+
+  const gs = totalGood > 0
+    ? ((goodDone + customGoodDone) / totalGood) * 100
+    : 0;
+
+  const bs = totalBad > 0
+    ? ((badDone + customBadDone) / totalBad) * 100
+    : 0;
+
   return Math.round(gs - bs * 0.5);
 }
 
@@ -97,7 +109,8 @@ function HabitChip({ active, bad = false, onClick, children }) {
     <button
       type="button"
       onClick={onClick}
-      className={`flex min-w-0 items-center gap-2.5 rounded-[var(--radius-control)] border px-3.5 py-3 text-left text-sm transition ${
+      aria-pressed={active}
+      className={`flex min-w-0 items-center justify-between gap-2.5 rounded-[var(--radius-control)] border px-3.5 py-3 text-left text-sm transition ${
         active
           ? bad
             ? 'border-[var(--color-danger)]/40 bg-[var(--color-danger)]/10 text-[var(--color-danger)]'
@@ -105,7 +118,17 @@ function HabitChip({ active, bad = false, onClick, children }) {
           : 'border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-hover)] hover:text-[var(--color-text)]'
       }`}
     >
-      {children}
+      <span className="flex min-w-0 items-center gap-2.5">
+        {children}
+      </span>
+
+      {active && (
+        <Check
+          size={16}
+          className="shrink-0"
+          aria-hidden="true"
+        />
+      )}
     </button>
   );
 }
@@ -123,22 +146,28 @@ export default function Log() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [existingId, setExistingId] = useState(null);
+
   const today = TODAY();
 
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
+
       const [habitsRes, entryRes] = await Promise.allSettled([
         fetchCustomHabits(),
         fetchEntryDate(today)
       ]);
 
       const habits =
-        habitsRes.status === 'fulfilled' ? habitsRes.value.data.habits : [];
+        habitsRes.status === 'fulfilled'
+          ? habitsRes.value.data.habits
+          : [];
+
       setCustomHabits(habits);
 
       if (entryRes.status === 'fulfilled' && entryRes.value.data.entry) {
         const e = entryRes.value.data.entry;
+
         setGood({ ...INITIAL_GOOD, ...e.good });
         setBad({ ...INITIAL_BAD, ...e.bad });
         setMood(e.mood);
@@ -151,6 +180,7 @@ export default function Log() {
             h.completed
           ])
         );
+
         setCustomStates(
           Object.fromEntries(
             habits.map((h) => [h._id, savedMap[h._id] ?? false])
@@ -174,6 +204,7 @@ export default function Log() {
 
   const toggleGood = (key) => setGood((p) => ({ ...p, [key]: !p[key] }));
   const toggleBad = (key) => setBad((p) => ({ ...p, [key]: !p[key] }));
+
   const toggleCustom = (id) =>
     setCustomStates((p) => ({ ...p, [id]: !p[id] }));
 
@@ -181,6 +212,7 @@ export default function Log() {
 
   const handleSave = async () => {
     setSaving(true);
+
     try {
       const customHabitsPayload = customHabits.map((h) => ({
         habitId: h._id,
@@ -218,7 +250,8 @@ export default function Log() {
 
   return (
     <div className="space-y-[var(--space-section)] pb-8">
-      {/* Header + live score */}
+
+      {/* Header + Live Score */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="mb-1 inline-flex items-center gap-2 text-[var(--color-brand-400)]">
@@ -227,9 +260,11 @@ export default function Log() {
               Daily log
             </span>
           </div>
+
           <h1 className="font-display text-2xl font-semibold tracking-tight text-[var(--color-text)] sm:text-3xl">
             Today&apos;s log
           </h1>
+
           <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
             {new Date().toLocaleDateString('en-PK', {
               weekday: 'long',
@@ -238,12 +273,13 @@ export default function Log() {
               day: 'numeric'
             })}
           </p>
+
           <p className="lt-help mt-1 max-w-md">
             Check what you did. Be honest — the score is a mirror, not a prize.
           </p>
         </div>
 
-        <div className="flex shrink-0 items-center justify-between gap-4 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 sm:min-w-[160px] sm:flex-col sm:items-end">
+        <div className="flex shrink-0 items-center justify-between gap-4 rounded-[var(--radius-card)] border border-[var(--color-brand-500)]/25 bg-[var(--color-surface)] px-4 py-3 shadow-sm sm:min-w-[170px] sm:flex-col sm:items-end">
           <div>
             <p className="text-[11px] font-medium text-[var(--color-text-muted)]">
               Live score
@@ -252,21 +288,30 @@ export default function Log() {
               Updates as you check
             </p>
           </div>
+
           <p className={`font-display text-3xl font-semibold ${scoreColor(score)}`}>
             {score}
           </p>
         </div>
       </div>
 
-      <ReplacementCoach good={good} bad={bad} customStates={customStates} />
+      <ReplacementCoach
+        good={good}
+        bad={bad}
+        customStates={customStates}
+      />
 
-      {/* Good habits */}
+      {/* Good Habits */}
       <section className="lt-card">
-        <h2 className="lt-title">Good habits</h2>
-        <p className="lt-help mb-3">What you did today</p>
-        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mb-4 space-y-1">
+          <h2 className="lt-title">Good habits</h2>
+          <p className="lt-help">What you did today</p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {Object.keys(INITIAL_GOOD).map((key) => {
             const Icon = GOOD_META[key].icon;
+
             return (
               <HabitChip
                 key={key}
@@ -274,7 +319,9 @@ export default function Log() {
                 onClick={() => toggleGood(key)}
               >
                 <Icon className="h-4 w-4 shrink-0 opacity-80" />
-                <span className="font-medium">{GOOD_META[key].label}</span>
+                <span className="font-medium">
+                  {GOOD_META[key].label}
+                </span>
               </HabitChip>
             );
           })}
@@ -282,10 +329,11 @@ export default function Log() {
 
         {customGood.length > 0 && (
           <>
-            <p className="mb-2 mt-4 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
+            <p className="mb-3 mt-5 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
               Your good habits
             </p>
-            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {customGood.map((h) => (
                 <HabitChip
                   key={h._id}
@@ -301,13 +349,19 @@ export default function Log() {
         )}
       </section>
 
-      {/* Bad habits */}
+      {/* Hard Moments */}
       <section className="lt-card">
-        <h2 className="lt-title">Hard moments</h2>
-        <p className="lt-help mb-3">What you slipped on — no shame, just data</p>
-        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mb-4 space-y-1">
+          <h2 className="lt-title">Hard moments</h2>
+          <p className="lt-help">
+            What you slipped on — no shame, just data
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {Object.keys(INITIAL_BAD).map((key) => {
             const Icon = BAD_META[key].icon;
+
             return (
               <HabitChip
                 key={key}
@@ -316,7 +370,9 @@ export default function Log() {
                 onClick={() => toggleBad(key)}
               >
                 <Icon className="h-4 w-4 shrink-0 opacity-80" />
-                <span className="font-medium">{BAD_META[key].label}</span>
+                <span className="font-medium">
+                  {BAD_META[key].label}
+                </span>
               </HabitChip>
             );
           })}
@@ -324,10 +380,11 @@ export default function Log() {
 
         {customBad.length > 0 && (
           <>
-            <p className="mb-2 mt-4 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
+            <p className="mb-3 mt-5 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
               Your hard habits
             </p>
-            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {customBad.map((h) => (
                 <HabitChip
                   key={h._id}
@@ -346,8 +403,11 @@ export default function Log() {
 
       {/* Mood */}
       <section className="lt-card">
-        <h2 className="lt-title">Mood</h2>
-        <p className="lt-help mb-3">How the day felt overall</p>
+        <div className="mb-4 space-y-1">
+          <h2 className="lt-title">Mood</h2>
+          <p className="lt-help">How the day felt overall</p>
+        </div>
+
         <div className="flex flex-wrap gap-2">
           {[1, 2, 3, 4, 5].map((n) => (
             <button
@@ -358,8 +418,8 @@ export default function Log() {
               aria-pressed={mood === n}
               className={`flex h-12 w-12 items-center justify-center rounded-[var(--radius-control)] border text-xl transition ${
                 mood === n
-                  ? 'scale-105 border-[var(--color-brand-500)] bg-[var(--color-brand-600)]/15'
-                  : 'border-[var(--color-border)] bg-[var(--color-bg)] hover:border-[var(--color-border-hover)]'
+                  ? 'scale-105 border-[var(--color-brand-500)] bg-[var(--color-brand-600)]/15 shadow-sm'
+                  : 'border-[var(--color-border)] bg-[var(--color-bg)] hover:border-[var(--color-brand-500)]/50 hover:bg-[var(--color-surface)]'
               }`}
             >
               {['😞', '😕', '😐', '🙂', '😄'][n - 1]}
@@ -370,13 +430,17 @@ export default function Log() {
 
       {/* Notes */}
       <section className="lt-card">
-        <h2 className="lt-title">
-          Notes{' '}
-          <span className="font-normal text-[var(--color-text-muted)]">
-            (optional)
-          </span>
-        </h2>
-        <p className="lt-help mb-3">One line is enough</p>
+        <div className="mb-4 space-y-1">
+          <h2 className="lt-title">
+            Notes{' '}
+            <span className="font-normal text-[var(--color-text-muted)]">
+              (optional)
+            </span>
+          </h2>
+
+          <p className="lt-help">One line is enough</p>
+        </div>
+
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
@@ -385,7 +449,8 @@ export default function Log() {
           placeholder="What mattered today?"
           className="w-full min-w-0 resize-y rounded-[var(--radius-control)] border border-[var(--color-border)] bg-[var(--color-bg)] px-3.5 py-3 text-sm text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] outline-none transition focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20"
         />
-        <p className="mt-1.5 text-right text-xs text-[var(--color-text-muted)]">
+
+        <p className="mt-2 text-right text-xs text-[var(--color-text-muted)]">
           {notes.length}/1000
         </p>
       </section>

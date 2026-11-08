@@ -1,6 +1,14 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { RefreshCw, Plus, Trash2, ArrowRight } from 'lucide-react';
+import {
+  RefreshCw,
+  Plus,
+  Trash2,
+  ArrowRight,
+  Ban,
+  CheckCircle2,
+  Sparkles
+} from 'lucide-react';
 import {
   fetchPairs,
   createPair,
@@ -40,11 +48,11 @@ const rateColor = (r) => {
 };
 
 const DOT_COLORS = {
-  success: 'var(--color-success)',   // green
-  partial: 'var(--color-warning)',   // amber
-  failed: 'var(--color-danger)',     // red
-  missed: 'var(--color-danger)',     // red — no log / miss
-  skip: 'var(--color-border)'        // legacy
+  success: 'var(--color-success)',
+  partial: 'var(--color-warning)',
+  failed: 'var(--color-danger)',
+  missed: 'var(--color-danger)',
+  skip: 'var(--color-border)'
 };
 
 export default function HabitReplacementPage() {
@@ -142,7 +150,7 @@ export default function HabitReplacementPage() {
       setSelectedGood('');
       setWindowDays(7);
       setRequireBoth(true);
-      toast.success('Replacement pair added!');
+      toast.success('Replacement pair added');
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Could not add pair.');
     } finally {
@@ -155,7 +163,7 @@ export default function HabitReplacementPage() {
     try {
       await deletePair(id);
       setPairs((p) => p.filter((pair) => pair._id !== id));
-      toast.success('Pair removed.');
+      toast.success('Pair removed');
     } catch {
       toast.error('Could not remove pair.');
     } finally {
@@ -200,38 +208,40 @@ export default function HabitReplacementPage() {
   }
 
   const selectClass =
-    'w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] px-3.5 py-2.5 text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20';
+    'w-full rounded-[var(--radius-control)] border border-[var(--color-border)] bg-[var(--color-bg)] px-3.5 py-2.5 text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-[var(--space-section)] pb-8">
       <div>
         <div className="mb-1 inline-flex items-center gap-2 text-[var(--color-brand-400)]">
-          <RefreshCw className="h-4 w-4" />
-          <span className="text-xs font-semibold uppercase tracking-wider">Replace</span>
+          <RefreshCw className="h-4 w-4" aria-hidden />
+          <span className="text-xs font-semibold uppercase tracking-wider">
+            Replace
+          </span>
         </div>
         <h1 className="font-display text-2xl font-semibold tracking-tight text-[var(--color-text)] sm:text-3xl">
-          Habit Replacement Map
+          Habit replacement map
         </h1>
-        <p className="mt-1 text-sm text-[var(--color-text-muted)]">
-          Link a bad habit to a good one. Progress is measured over your chosen window — not a
-          single day.
+        <p className="mt-1 max-w-xl text-sm text-[var(--color-text-secondary)]">
+          Link a hard habit to a better one. Success is measured over your
+          window — not a single day.
         </p>
       </div>
 
       {pairs.length > 0 && (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+          <div className="lt-card p-4">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
-              Active Pairs
+              Active pairs
             </p>
             <p className="mt-1 font-display text-3xl font-semibold text-[var(--color-brand-400)]">
               {pairs.length}
             </p>
-            <p className="text-xs text-[var(--color-text-muted)]">of 8 max</p>
+            <p className="text-xs text-[var(--color-text-secondary)]">of 8 max</p>
           </div>
-          <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+          <div className="lt-card p-4">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
-              Avg Success
+              Avg success
             </p>
             <p
               className="mt-1 font-display text-3xl font-semibold"
@@ -240,16 +250,16 @@ export default function HabitReplacementPage() {
               {avgSuccess == null ? '—' : `${avgSuccess}%`}
             </p>
           </div>
-          <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+          <div className="lt-card p-4">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
-              Best Pair
+              Best pair
             </p>
-            <p className="mt-2 text-lg">
+            <p className="mt-2 text-sm font-semibold text-[var(--color-text)]">
               {bestPair
-                ? `${bestPair.badHabitEmoji} → ${bestPair.goodHabitEmoji}`
+                ? `${bestPair.badHabitLabel} → ${bestPair.goodHabitLabel}`
                 : '—'}
             </p>
-            <p className="text-xs text-[var(--color-text-muted)]">
+            <p className="text-xs text-[var(--color-text-secondary)]">
               {bestPair?.stats?.successRate != null
                 ? `${bestPair.stats.successRate}% · ${bestPair.stats.progressLabel || ''}`
                 : bestPair?.stats?.progressLabel || ''}
@@ -258,18 +268,25 @@ export default function HabitReplacementPage() {
         </div>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_1.4fr]">
-        <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
-          <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-[var(--color-text)]">
-            <Plus className="h-4 w-4" /> New Replacement Pair
+      <div className="grid min-w-0 gap-4 lg:grid-cols-[1fr_1.35fr]">
+        {/* Create form */}
+        <section className="lt-card h-fit">
+          <h2 className="mb-1 flex items-center gap-2 text-sm font-semibold text-[var(--color-text)]">
+            <Plus className="h-4 w-4 text-[var(--color-brand-400)]" aria-hidden />
+            New replacement pair
           </h2>
-          <form onSubmit={handleCreate} className="space-y-3">
+          <p className="mb-4 text-xs text-[var(--color-text-secondary)]">
+            Avoid one · do the other · track the window
+          </p>
+
+          <form onSubmit={handleCreate} className="space-y-4">
             <div>
               <label
                 htmlFor="bad-habit"
-                className="mb-1.5 block text-sm text-[var(--color-text-secondary)]"
+                className="mb-1.5 flex items-center gap-1.5 text-sm text-[var(--color-text-secondary)]"
               >
-                Bad Habit
+                <Ban className="h-3.5 w-3.5 text-[var(--color-danger)]" aria-hidden />
+                Hard habit to avoid
               </label>
               <select
                 id="bad-habit"
@@ -277,25 +294,29 @@ export default function HabitReplacementPage() {
                 onChange={(e) => setSelectedBad(e.target.value)}
                 className={selectClass}
               >
-                <option value="">Select bad habit…</option>
+                <option value="">Select…</option>
                 {badOptions.map((o) => (
                   <option key={o.key} value={o.key}>
-                    {o.emoji} {o.label}
+                    {o.label}
                   </option>
                 ))}
               </select>
             </div>
 
             <div className="flex justify-center text-[var(--color-brand-400)]">
-              <ArrowRight className="h-5 w-5" />
+              <ArrowRight className="h-5 w-5" aria-hidden />
             </div>
 
             <div>
               <label
                 htmlFor="good-habit"
-                className="mb-1.5 block text-sm text-[var(--color-text-secondary)]"
+                className="mb-1.5 flex items-center gap-1.5 text-sm text-[var(--color-text-secondary)]"
               >
-                Good Habit
+                <CheckCircle2
+                  className="h-3.5 w-3.5 text-[var(--color-success)]"
+                  aria-hidden
+                />
+                Do this instead
               </label>
               <select
                 id="good-habit"
@@ -303,10 +324,10 @@ export default function HabitReplacementPage() {
                 onChange={(e) => setSelectedGood(e.target.value)}
                 className={selectClass}
               >
-                <option value="">Select good habit…</option>
+                <option value="">Select…</option>
                 {goodOptions.map((o) => (
                   <option key={o.key} value={o.key}>
-                    {o.emoji} {o.label}
+                    {o.label}
                   </option>
                 ))}
               </select>
@@ -344,16 +365,17 @@ export default function HabitReplacementPage() {
                 className="mt-0.5 h-4 w-4 rounded border-[var(--color-border)]"
               />
               <span>
-                Require both: avoid bad habit <strong>and</strong> do good habit
+                Require both: avoid hard habit <strong>and</strong> do the
+                replacement
               </span>
             </label>
 
             <button
               type="submit"
               disabled={saving || pairs.length >= 8}
-              className="w-full rounded-xl bg-[var(--color-brand-600)] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+              className="w-full rounded-[var(--radius-control)] bg-[var(--color-brand-600)] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[var(--color-brand-500)] disabled:opacity-50"
             >
-              {saving ? 'Adding…' : 'Add Pair'}
+              {saving ? 'Adding…' : 'Add pair'}
             </button>
             <p className="text-right text-xs text-[var(--color-text-muted)]">
               {pairs.length}/8 pairs
@@ -361,10 +383,22 @@ export default function HabitReplacementPage() {
           </form>
         </section>
 
-        <section className="space-y-3">
+        {/* List */}
+        <section className="min-w-0 space-y-3">
           {pairs.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-12 text-center text-sm text-[var(--color-text-muted)]">
-              No replacement pairs yet. Create one on the left.
+            <div className="lt-card-muted flex min-h-[220px] flex-col items-center justify-center gap-3 px-6 py-12 text-center">
+              <span className="inline-flex h-12 w-12 items-center justify-center rounded-[var(--radius-control)] bg-[var(--color-brand-600)]/12 text-[var(--color-brand-400)]">
+                <Sparkles className="h-6 w-6" aria-hidden />
+              </span>
+              <div>
+                <p className="text-sm font-semibold text-[var(--color-text)]">
+                  No pairs yet
+                </p>
+                <p className="mt-1 max-w-xs text-xs text-[var(--color-text-secondary)]">
+                  Create a pair on the left. Progress and window rules will show
+                  here.
+                </p>
+              </div>
             </div>
           ) : (
             pairs.map((pair) => {
@@ -374,31 +408,43 @@ export default function HabitReplacementPage() {
               const busy = rulesSavingId === pair._id;
 
               return (
-                <div
+                <article
                   key={pair._id}
-                  className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4"
+                  className="lt-card space-y-3 p-4"
                 >
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-lg bg-[var(--color-danger)]/10 px-2.5 py-1 text-sm font-medium text-[var(--color-danger)]">
-                      {pair.badHabitEmoji} {pair.badHabitLabel}
-                    </span>
-                    <ArrowRight className="h-4 w-4 text-[var(--color-brand-400)]" />
-                    <span className="rounded-lg bg-[var(--color-success)]/10 px-2.5 py-1 text-sm font-medium text-[var(--color-success)]">
-                      {pair.goodHabitEmoji} {pair.goodHabitLabel}
-                    </span>
+                  <div className="flex flex-wrap items-start gap-2">
+                    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-control)] border border-[var(--color-danger)]/25 bg-[var(--color-danger)]/8 px-2.5 py-1.5 text-sm font-medium text-[var(--color-danger)]">
+                        <Ban className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                        {pair.badHabitLabel}
+                      </span>
+                      <ArrowRight
+                        className="h-4 w-4 shrink-0 text-[var(--color-brand-400)]"
+                        aria-hidden
+                      />
+                      <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-control)] border border-[var(--color-success)]/25 bg-[var(--color-success)]/8 px-2.5 py-1.5 text-sm font-medium text-[var(--color-success)]">
+                        <CheckCircle2
+                          className="h-3.5 w-3.5 shrink-0"
+                          aria-hidden
+                        />
+                        {pair.goodHabitLabel}
+                      </span>
+                    </div>
                     <button
                       type="button"
                       onClick={() => handleDelete(pair._id)}
                       disabled={deleteId === pair._id}
-                      className="ml-auto text-[var(--color-text-muted)] hover:text-[var(--color-danger)]"
+                      className="rounded-lg p-1.5 text-[var(--color-text-muted)] hover:bg-[var(--color-danger)]/10 hover:text-[var(--color-danger)]"
                       aria-label="Delete pair"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
 
-                  <div className="mt-3 flex items-center gap-2">
-                    <span className="text-xs text-[var(--color-text-muted)]">Progress</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-[var(--color-text-muted)]">
+                      Progress
+                    </span>
                     <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[var(--color-bg)]">
                       <div
                         className="h-full rounded-full transition-all"
@@ -416,12 +462,12 @@ export default function HabitReplacementPage() {
                     </span>
                   </div>
                   {pair.stats?.progressLabel && (
-                    <p className="mt-1 text-[11px] text-[var(--color-text-muted)]">
+                    <p className="text-[11px] text-[var(--color-text-secondary)]">
                       {pair.stats.progressLabel}
                     </p>
                   )}
 
-                  <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-[var(--color-text-muted)]">
+                  <div className="flex flex-wrap items-center gap-3 border-t border-[var(--color-border)] pt-3 text-xs text-[var(--color-text-secondary)]">
                     <label className="flex items-center gap-1.5">
                       <span>Window</span>
                       <select
@@ -470,17 +516,21 @@ export default function HabitReplacementPage() {
                       </strong>
                     </span>
                     <div className="ml-auto flex gap-1">
-                      {(pair.stats?.last7 || pair.stats?.lastN || []).map((d, i) => (
-                        <span
-                          key={i}
-                          title={d}
-                          className="h-2.5 w-2.5 rounded-full"
-                          style={{ background: DOT_COLORS[d] || DOT_COLORS.skip }}
-                        />
-                      ))}
+                      {(pair.stats?.last7 || pair.stats?.lastN || []).map(
+                        (d, i) => (
+                          <span
+                            key={i}
+                            title={d}
+                            className="h-2.5 w-2.5 rounded-full"
+                            style={{
+                              background: DOT_COLORS[d] || DOT_COLORS.skip
+                            }}
+                          />
+                        )
+                      )}
                     </div>
                   </div>
-                </div>
+                </article>
               );
             })
           )}
