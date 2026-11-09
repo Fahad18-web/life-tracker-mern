@@ -1,19 +1,27 @@
 @import "tailwindcss";
 
+/* ── Base tokens (dark default) ── */
 :root {
-  /* fonts — pehle jaisa */
   --font-sans: "Outfit", system-ui, sans-serif;
   --font-display: "Capriola", system-ui, sans-serif;
 
-  /* brand-50…900 — apna current teal/ocean rehne do */
+  /* Default brand = teal */
+  --color-brand-50: #f0fdfa;
+  --color-brand-100: #ccfbf1;
+  --color-brand-200: #99f6e4;
+  --color-brand-300: #5eead4;
+  --color-brand-400: #2dd4bf;
+  --color-brand-500: #14b8a6;
+  --color-brand-600: #0d9488;
+  --color-brand-700: #0f766e;
+  --color-brand-800: #115e59;
+  --color-brand-900: #134e4a;
 
   --color-bg: #0a0c0b;
   --color-surface: #121614;
   --color-surface-2: #1a1f1d;
-
   --color-border: #2a322f;
   --color-border-hover: #3a433f;
-
   --color-text: #f2f5f3;
   --color-text-secondary: #b0bcb6;
   --color-text-muted: #8a9590;
@@ -22,96 +30,56 @@
   --color-danger: #f07178;
   --color-warning: #e6b84d;
 
-  /* design pass 1 — rhythm */
   --radius-card: 1rem;
   --radius-control: 0.75rem;
   --space-section: 1.25rem;
+
+  --glass-bg: color-mix(in srgb, var(--color-surface) 78%, transparent);
+  --glass-border: color-mix(in srgb, var(--color-border) 85%, transparent);
+  --glass-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+  --glass-blur: 8px;
 }
 
 [data-theme="light"] {
   --color-bg: #f3f5f4;
   --color-surface: #ffffff;
   --color-surface-2: #e9eeeb;
-
   --color-border: #d2dcd7;
   --color-border-hover: #b9c5bf;
-
   --color-text: #0e1311;
   --color-text-secondary: #3a4742;
   --color-text-muted: #5a6862;
+
+  --glass-bg: color-mix(in srgb, var(--color-surface) 82%, transparent);
+  --glass-shadow: 0 8px 24px rgba(15, 23, 20, 0.08);
 }
 
-html,
-body,
-#root {
-  min-height: 100%;
+/* Teal on white: brand-400 was too light for labels */
+[data-theme="light"][data-accent="teal"] {
+  --color-brand-300: #0f766e;
+  --color-brand-400: #0d9488;
 }
 
-body {
-  margin: 0;
-  font-family: var(--font-sans);
-  background: var(--color-bg);
-  color: var(--color-text);
-  -webkit-font-smoothing: antialiased;
+/* Burnt Orange on white: brand-400 was too light for labels */
+[data-theme="light"][data-accent="ember"] {
+  --color-brand-300: #b84317;
+  --color-brand-400: #c94b1b;
 }
 
-#root {
-  width: 100%;
-  min-width: 0;
+/* ── Accent presets ── */
+[data-accent="teal"] {
+  --color-brand-50: #f0fdfa;
+  --color-brand-100: #ccfbf1;
+  --color-brand-200: #99f6e4;
+  --color-brand-300: #5eead4;
+  --color-brand-400: #2dd4bf;
+  --color-brand-500: #14b8a6;
+  --color-brand-600: #0d9488;
+  --color-brand-700: #0f766e;
+  --color-brand-800: #115e59;
+  --color-brand-900: #134e4a;
 }
 
-/* Let responsive flex/grid children shrink to the available track. */
-:where(.flex > *, .grid > *) {
-  min-width: 0;
-}
-
-:where(input, textarea, select, button) {
-  max-width: 100%;
-}
-
-.font-display {
-  font-family: var(--font-display);
-}
-
-.page-loader {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 50vh;
-  color: var(--color-text-muted);
-}
-
-/* Subtle scrollbar */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-border) transparent;
-}
-
-*::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-*::-webkit-scrollbar-thumb {
-  background: var(--color-border);
-  border-radius: 999px;
-}
-
-*::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::selection {
-  background: color-mix(in srgb, var(--color-brand-500) 35%, transparent);
-  color: var(--color-text);
-}
-
-:focus-visible {
-  outline: 2px solid var(--color-brand-500);
-  outline-offset: 2px;
-}
-
-/* ── Accent presets (buttons, links, highlights) ── */
 [data-accent="ocean"] {
   --color-brand-50: #f0f9ff;
   --color-brand-100: #e0f2fe;
@@ -164,25 +132,89 @@ body {
   --color-brand-900: #881337;
 }
 
-/* teal = default :root brand — no extra block needed */
-
-/* ── Lightweight glass (performance-safe) ── */
-:root {
-  --glass-bg: color-mix(in srgb, var(--color-surface) 78%, transparent);
-  --glass-border: color-mix(in srgb, var(--color-border) 85%, transparent);
-  --glass-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
-  --glass-blur: 8px;
-  /* keep ≤ 10px */
+[data-accent="ember"] {
+  --color-brand-50: #fdf4ef;
+  --color-brand-100: #f9e4d6;
+  --color-brand-200: #f2c4a8;
+  --color-brand-300: #e89a6e;
+  --color-brand-400: #e07a45;
+  --color-brand-500: #d9541e;
+  --color-brand-600: #c24a1a;
+  --color-brand-700: #9a3b15;
+  --color-brand-800: #7a2f12;
+  --color-brand-900: #5c240e;
 }
 
-[data-theme="light"] {
-  --glass-bg: color-mix(in srgb, var(--color-surface) 82%, transparent);
-  --glass-shadow: 0 8px 24px rgba(15, 23, 20, 0.08);
+/* ── Base layout ── */
+html,
+body,
+#root {
+  min-height: 100%;
 }
 
-/**
- * Header / sticky bars only — translucent surface without blur seams.
- */
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: var(--color-bg);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  width: 100%;
+  min-width: 0;
+}
+
+:where(.flex > *, .grid > *) {
+  min-width: 0;
+}
+
+:where(input, textarea, select, button) {
+  max-width: 100%;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.page-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  color: var(--color-text-muted);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-brand-500) 35%, transparent);
+  color: var(--color-text);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-brand-500);
+  outline-offset: 2px;
+}
+
+/* ── Glass ── */
 .glass-header {
   background: var(--glass-bg);
   border-bottom: none;
@@ -191,10 +223,6 @@ body {
   backdrop-filter: blur(var(--glass-blur));
 }
 
-/**
- * Cards / panels — glass look WITHOUT backdrop-filter (fast on mobile).
- * Use sparingly (1–2 primary cards max).
- */
 .glass-panel {
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
@@ -202,7 +230,6 @@ body {
 }
 
 @media (prefers-reduced-transparency: reduce) {
-
   .glass-header,
   .glass-panel {
     background: var(--color-surface);
@@ -212,25 +239,11 @@ body {
   }
 }
 
-/**
- * Optional: turn OFF header blur on very small / preference
- * (uncomment if mobile still lags)
- */
-/*
-@media (max-width: 640px) {
-  .glass-header {
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-    background: color-mix(in srgb, var(--color-surface) 92%, transparent);
-  }
-}
-*/
-
-
-/* ── Time ambient (CSS only, light) ── */
+/* ── Time ambient ── */
 .time-ambient {
   position: relative;
   overflow: hidden;
+  max-width: 100%;
   border-radius: 1rem;
   border: 1px solid var(--color-border);
   background: var(--color-surface);
@@ -239,23 +252,28 @@ body {
 .time-ambient__glow {
   pointer-events: none;
   position: absolute;
-  inset: -40% -20% auto -20%;
-  height: 120%;
+  inset: -20% 0 auto 0;
+  height: 90%;
+  max-width: 100%;
   opacity: 0.55;
 }
 
 .time-ambient--morning .time-ambient__glow {
-  background: radial-gradient(ellipse at 50% 0%,
-      color-mix(in srgb, #f59e0b 35%, transparent),
-      color-mix(in srgb, #f97316 12%, transparent) 45%,
-      transparent 70%);
+  background: radial-gradient(
+    ellipse at 50% 0%,
+    color-mix(in srgb, #f59e0b 35%, transparent),
+    color-mix(in srgb, #f97316 12%, transparent) 45%,
+    transparent 70%
+  );
 }
 
 .time-ambient--night .time-ambient__glow {
-  background: radial-gradient(ellipse at 50% 0%,
-      color-mix(in srgb, #6366f1 28%, transparent),
-      color-mix(in srgb, #0ea5e9 10%, transparent) 40%,
-      transparent 70%);
+  background: radial-gradient(
+    ellipse at 50% 0%,
+    color-mix(in srgb, #6366f1 28%, transparent),
+    color-mix(in srgb, #0ea5e9 10%, transparent) 40%,
+    transparent 70%
+  );
 }
 
 .time-ambient__content {
@@ -332,20 +350,13 @@ body {
     opacity: 0;
     transform: translateY(-6px);
   }
-
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .time-ambient:not(.time-ambient--static) {
-    animation: none;
-  }
-}
-
-/* Activity heatmap */
+/* ── Heatmap ── */
 .hm-cell {
   display: block;
   width: 0.6875rem;
@@ -384,12 +395,11 @@ button.hm-cell {
   background: var(--color-brand-400);
 }
 
-[data-theme='light'] .hm-l0 {
+[data-theme="light"] .hm-l0 {
   background: #ebedf0;
 }
 
-
-/* Design pass 1 — shared surfaces */
+/* ── Shared cards ── */
 .lt-card {
   border-radius: var(--radius-card);
   border: 1px solid var(--color-border);
@@ -427,13 +437,7 @@ button.hm-cell {
   color: var(--color-text-secondary);
 }
 
-
-
-
-/* =========================================
-   LIFETRACKER — DASHBOARD UI POLISH
-   ========================================= */
-
+/* ── Dashboard polish ── */
 .dashboard-page {
   min-width: 0;
   animation: dashboard-enter 0.35s ease-out;
@@ -444,14 +448,11 @@ button.hm-cell {
     opacity: 0;
     transform: translateY(6px);
   }
-
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
-
-/* Dashboard header */
 
 .dashboard-heading {
   position: relative;
@@ -474,26 +475,15 @@ button.hm-cell {
   z-index: -1;
 }
 
-/* Streak indicator */
-
 .dashboard-streak {
-  border: 1px solid var(--color-brand-500);
-  border-color: color-mix(
-    in srgb,
-    var(--color-brand-500) 25%,
-    transparent
-  );
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
+  border: 1px solid color-mix(in srgb, var(--color-brand-500) 25%, transparent);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .dashboard-streak:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
 }
-
-/* Dashboard tabs */
 
 .dashboard-tabs {
   position: relative;
@@ -517,10 +507,7 @@ button.hm-cell {
   background: transparent;
   color: var(--color-text-secondary);
   cursor: pointer;
-  transition:
-    background 0.2s ease,
-    color 0.2s ease,
-    box-shadow 0.2s ease;
+  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .dashboard-tab:hover {
@@ -534,16 +521,11 @@ button.hm-cell {
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
 }
 
-/* Dashboard stat cards */
-
 .dashboard-stat {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
   background: var(--color-surface);
-  transition:
-    transform 0.2s ease,
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .dashboard-stat:hover {
@@ -552,35 +534,19 @@ button.hm-cell {
   box-shadow: 0 8px 22px rgba(0, 0, 0, 0.06);
 }
 
-/* Progress streak panel */
-
 .dashboard-streak-panel {
   position: relative;
   overflow: hidden;
-  border: 1px solid var(--color-brand-500);
-  border-color: color-mix(
-    in srgb,
-    var(--color-brand-500) 25%,
-    transparent
-  );
+  border: 1px solid color-mix(in srgb, var(--color-brand-500) 25%, transparent);
   border-radius: 18px;
-  background: color-mix(
-    in srgb,
-    var(--color-brand-600) 9%,
-    var(--color-surface)
-  );
+  background: color-mix(in srgb, var(--color-brand-600) 9%, var(--color-surface));
 }
-
-/* Weekly progress cards */
 
 .dashboard-week-card {
   border: 1px solid var(--color-border);
   border-radius: 12px;
   background: var(--color-surface);
-  transition:
-    transform 0.2s ease,
-    border-color 0.2s ease,
-    background 0.2s ease;
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
 }
 
 .dashboard-week-card:hover {
@@ -590,29 +556,17 @@ button.hm-cell {
 
 .dashboard-week-card.is-today {
   border-color: var(--color-brand-500);
-  background: color-mix(
-    in srgb,
-    var(--color-brand-600) 9%,
-    var(--color-surface)
-  );
+  background: color-mix(in srgb, var(--color-brand-600) 9%, var(--color-surface));
 }
-
-/* General dashboard surfaces */
 
 .dashboard-page .lt-card,
 .dashboard-page .lt-card-muted {
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .dashboard-page a {
-  transition:
-    color 0.2s ease,
-    background 0.2s ease;
+  transition: color 0.2s ease, background 0.2s ease;
 }
-
-/* Loading animation */
 
 .dashboard-page .dashboard-skeleton {
   animation: dashboard-pulse 1.5s ease-in-out infinite;
@@ -623,52 +577,10 @@ button.hm-cell {
   100% {
     opacity: 1;
   }
-
   50% {
     opacity: 0.45;
   }
 }
-
-/* Responsive adjustments */
-
-@media (max-width: 640px) {
-  .dashboard-page {
-    gap: 16px;
-  }
-
-  .dashboard-tabs {
-    gap: 3px;
-    padding: 4px;
-  }
-
-  .dashboard-tab {
-    gap: 5px;
-    padding: 10px 6px;
-  }
-
-  .dashboard-streak {
-    width: 100%;
-    justify-content: center;
-  }
-}
-
-/* Accessibility: reduced motion */
-
-@media (prefers-reduced-motion: reduce) {
-  .dashboard-page,
-  .dashboard-page *,
-  .dashboard-page *::before,
-  .dashboard-page *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-}
-
-/* ================================
-   Dashboard Welcome Header
-================================ */
 
 .dashboard-welcome {
   display: flex;
@@ -769,17 +681,14 @@ button.hm-cell {
   font-weight: 600;
   text-decoration: none;
   white-space: nowrap;
-  transition:
-    background 0.2s ease,
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
+  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .dashboard-log-button:hover {
   background: var(--color-brand-500);
   color: white;
   transform: translateY(-2px);
-  box-shadow: 0 5px 18px rgba(0, 150, 200, 0.2);
+  box-shadow: 0 5px 18px color-mix(in srgb, var(--color-brand-600) 35%, transparent);
 }
 
 .dashboard-log-button svg {
@@ -790,8 +699,26 @@ button.hm-cell {
   transform: translateX(3px);
 }
 
-/* Responsive */
 @media (max-width: 640px) {
+  .dashboard-page {
+    gap: 16px;
+  }
+
+  .dashboard-tabs {
+    gap: 3px;
+    padding: 4px;
+  }
+
+  .dashboard-tab {
+    gap: 5px;
+    padding: 10px 6px;
+  }
+
+  .dashboard-streak {
+    width: 100%;
+    justify-content: center;
+  }
+
   .dashboard-welcome {
     align-items: flex-start;
     flex-direction: column;
@@ -813,6 +740,20 @@ button.hm-cell {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .time-ambient:not(.time-ambient--static) {
+    animation: none;
+  }
+
+  .dashboard-page,
+  .dashboard-page *,
+  .dashboard-page *::before,
+  .dashboard-page *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
   .dashboard-current-streak,
   .dashboard-log-button,
   .dashboard-log-button svg {

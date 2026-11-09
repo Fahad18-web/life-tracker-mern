@@ -240,7 +240,7 @@ class AuthService {
     }
 
     if (updates.themePreset !== undefined) {
-      if (!['teal', 'ocean', 'amber', 'forest', 'rose'].includes(updates.themePreset)) {
+      if (!['teal', 'ocean', 'amber', 'forest', 'rose', 'ember'].includes(updates.themePreset)) {
         throw new AppError('Invalid theme preset.', 400);
       }
       allowed.themePreset = updates.themePreset;

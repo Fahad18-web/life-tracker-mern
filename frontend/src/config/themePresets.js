@@ -32,6 +32,12 @@ export const THEME_PRESETS = [
     label: 'Dusty Rose',
     description: 'Calm & human',
     swatch: '#e11d48'
+  },
+  {
+    id: 'ember',
+    label: 'Burnt Orange',
+    description: 'Warm signal — cream & ink energy',
+    swatch: '#D9541E'
   }
 ];
 

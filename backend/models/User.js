@@ -72,7 +72,7 @@ const UserSchema = new mongoose.Schema({
     },
     themePreset: {
       type: String,
-      enum: ['teal', 'ocean', 'amber', 'forest', 'rose'],
+      enum: ['teal', 'ocean', 'amber', 'forest', 'rose', 'ember'],
       default: 'teal'
     },
     dailyReminderEnabled: {
