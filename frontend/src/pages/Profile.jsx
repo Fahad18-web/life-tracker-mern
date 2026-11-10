@@ -175,7 +175,7 @@ export default function Profile() {
       {/* Profile Overview */}
       <section className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]">
         <div className="p-5 sm:p-6">
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap items-start gap-4">
             <div className="rounded-full border-2 border-[var(--color-brand-500)]/30 p-1">
               <Avatar avatar={profile?.avatar} name={profile?.name} size={64} />
             </div>
@@ -195,7 +195,7 @@ export default function Profile() {
               </div>
             </div>
 
-            <div className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-success)]/30 bg-[var(--color-success)]/10 px-3 py-1.5">
+            <div className="ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[var(--color-success)]/30 bg-[var(--color-success)]/10 px-3 py-1.5">
               <Sparkles className="h-3.5 w-3.5 text-[var(--color-success)]" />
               <span className="text-xs font-medium text-[var(--color-success)]">
                 LifeTracker Member

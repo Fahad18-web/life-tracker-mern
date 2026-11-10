@@ -144,12 +144,12 @@ export default function LandingPage() {
       <JsonLd id="ld-faq" data={buildFaqJsonLd()} />
       <JsonLd id="ld-org" data={buildOrganizationJsonLd()} />
 
-      {/* Header */}
+      {/* Navigation */}
       <header
         className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
           scrolled
-            ? 'border-b border-[var(--color-border)] bg-[var(--color-bg)]/90 shadow-sm backdrop-blur-xl'
-            : 'border-b border-transparent bg-transparent'
+            ? 'border-b border-[var(--color-border)] bg-[var(--color-bg)]/95 shadow-sm backdrop-blur-md'
+            : 'border-b border-transparent bg-[var(--color-bg)]/70 backdrop-blur-sm'
         }`}
       >
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
@@ -157,8 +157,9 @@ export default function LandingPage() {
             type="button"
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
             className="flex cursor-pointer items-center gap-2 border-0 bg-transparent p-0"
+            aria-label="LifeTracker home"
           >
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--color-brand-600)]/15 text-[var(--color-brand-400)] ring-1 ring-[var(--color-brand-500)]/15">
+            <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--color-brand-600)]/12 text-[var(--color-brand-400)]">
               <Leaf className="h-4 w-4" />
             </span>
             <span className="font-display text-base font-semibold text-[var(--color-text)]">
@@ -166,23 +167,17 @@ export default function LandingPage() {
             </span>
           </button>
 
-          <nav className="hidden items-center gap-6 lg:flex">
-            <a
-              href="#features"
-              className="text-sm text-[var(--color-text-secondary)] transition hover:text-[var(--color-brand-400)]"
-            >
+          <nav className="hidden items-center gap-6 lg:flex" aria-label="Main navigation">
+            <a href="#features" className="text-sm text-[var(--color-text-secondary)] transition hover:text-[var(--color-brand-400)]">
               Features
             </a>
-            <a
-              href="#how-it-works"
-              className="text-sm text-[var(--color-text-secondary)] transition hover:text-[var(--color-brand-400)]"
-            >
+            <a href="#habits" className="text-sm text-[var(--color-text-secondary)] transition hover:text-[var(--color-brand-400)]">
+              Habits
+            </a>
+            <a href="#how-it-works" className="text-sm text-[var(--color-text-secondary)] transition hover:text-[var(--color-brand-400)]">
               How it works
             </a>
-            <a
-              href="#faq"
-              className="text-sm text-[var(--color-text-secondary)] transition hover:text-[var(--color-brand-400)]"
-            >
+            <a href="#faq" className="text-sm text-[var(--color-text-secondary)] transition hover:text-[var(--color-brand-400)]">
               FAQs
             </a>
           </nav>
@@ -191,7 +186,7 @@ export default function LandingPage() {
             <button
               type="button"
               onClick={toggleTheme}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-secondary)] transition hover:border-[var(--color-brand-500)]/40 hover:text-[var(--color-brand-400)]"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--color-border)] text-[var(--color-text-secondary)] transition hover:border-[var(--color-brand-500)]/40 hover:text-[var(--color-brand-400)]"
               aria-label="Toggle theme"
             >
               {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
@@ -200,7 +195,7 @@ export default function LandingPage() {
             <button
               type="button"
               onClick={() => go('/login')}
-              className="rounded-xl border border-[var(--color-border)] px-4 py-2 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-border-hover)] hover:bg-[var(--color-surface)]"
+              className="rounded-lg px-4 py-2 text-sm font-semibold text-[var(--color-text-secondary)] transition hover:text-[var(--color-text)]"
             >
               Sign in
             </button>
@@ -208,7 +203,7 @@ export default function LandingPage() {
             <button
               type="button"
               onClick={() => go('/register')}
-              className="rounded-xl bg-[var(--color-brand-600)] px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-[var(--color-brand-600)]/20 transition hover:-translate-y-0.5 hover:bg-[var(--color-brand-500)]"
+              className="rounded-lg bg-[var(--color-brand-600)] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[var(--color-brand-500)]"
             >
               Get Started
             </button>
@@ -216,10 +211,11 @@ export default function LandingPage() {
 
           <button
             type="button"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] transition hover:border-[var(--color-brand-500)]/40 sm:hidden"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--color-border)] text-[var(--color-text)] transition hover:border-[var(--color-brand-500)]/40 sm:hidden"
             onClick={() => setMenuOpen((v) => !v)}
             aria-label={menuOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={menuOpen}
+            aria-controls="landing-mobile-menu"
           >
             {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
@@ -228,65 +224,59 @@ export default function LandingPage() {
         {menuOpen && (
           <>
             <div
-              className="fixed inset-0 top-16 z-40 bg-black/45 sm:hidden"
+              className="fixed inset-0 top-16 z-40 bg-black/40 sm:hidden"
               onClick={closeMenu}
-              aria-hidden
+              aria-hidden="true"
             />
 
             <div
-              className="relative z-50 border-t border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-4 shadow-xl sm:hidden"
+              id="landing-mobile-menu"
+              className="relative z-50 border-t border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-4 sm:hidden"
               role="dialog"
               aria-modal="true"
-              aria-label="Menu"
+              aria-label="Navigation menu"
             >
-              <div className="mb-3 flex flex-col gap-1">
-                <a
-                  href="#features"
-                  onClick={closeMenu}
-                  className="rounded-xl px-3 py-2.5 text-sm text-[var(--color-text-secondary)] transition hover:bg-[var(--color-bg)] hover:text-[var(--color-text)]"
-                >
-                  Features
-                </a>
-                <a
-                  href="#how-it-works"
-                  onClick={closeMenu}
-                  className="rounded-xl px-3 py-2.5 text-sm text-[var(--color-text-secondary)] transition hover:bg-[var(--color-bg)] hover:text-[var(--color-text)]"
-                >
-                  How it works
-                </a>
-                <a
-                  href="#faq"
-                  onClick={closeMenu}
-                  className="rounded-xl px-3 py-2.5 text-sm text-[var(--color-text-secondary)] transition hover:bg-[var(--color-bg)] hover:text-[var(--color-text)]"
-                >
-                  FAQs
-                </a>
-              </div>
+              <nav className="mb-3 flex flex-col" aria-label="Mobile navigation">
+                {[
+                  ['Features', '#features'],
+                  ['Habits', '#habits'],
+                  ['How it works', '#how-it-works'],
+                  ['FAQs', '#faq']
+                ].map(([label, href]) => (
+                  <a
+                    key={href}
+                    href={href}
+                    onClick={closeMenu}
+                    className="border-b border-[var(--color-border)] py-3 text-sm text-[var(--color-text-secondary)] transition hover:text-[var(--color-brand-400)]"
+                  >
+                    {label}
+                  </a>
+                ))}
+              </nav>
 
               <button
                 type="button"
                 onClick={toggleTheme}
-                className="mb-3 flex w-full items-center gap-2.5 rounded-xl border border-[var(--color-border)] px-3 py-2.5 text-left text-sm font-medium text-[var(--color-text-secondary)] transition hover:bg-[var(--color-bg)] hover:text-[var(--color-text)]"
+                className="mb-3 flex w-full items-center gap-2.5 py-2.5 text-left text-sm font-medium text-[var(--color-text-secondary)] transition hover:text-[var(--color-text)]"
               >
                 {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
                 <span>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
               </button>
 
-              <div className="flex flex-col gap-2">
-                <button
-                  type="button"
-                  onClick={() => go('/register')}
-                  className="w-full rounded-xl bg-[var(--color-brand-600)] px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-[var(--color-brand-500)]"
-                >
-                  Get Started
-                </button>
-
+              <div className="flex gap-3">
                 <button
                   type="button"
                   onClick={() => go('/login')}
-                  className="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 text-center text-sm font-semibold text-[var(--color-text)] transition hover:bg-[var(--color-bg)]"
+                  className="flex-1 rounded-lg border border-[var(--color-border)] px-4 py-3 text-center text-sm font-semibold text-[var(--color-text)]"
                 >
                   Sign in
+                </button>
+                <button
+                  type="button"
+                  onClick={() => go('/register')}
+                  className="flex-1 rounded-lg bg-[var(--color-brand-600)] px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-[var(--color-brand-500)]"
+                >
+                  Get Started
                 </button>
               </div>
             </div>
@@ -294,102 +284,90 @@ export default function LandingPage() {
         )}
       </header>
 
-      {/* Hero */}
-      <section className="relative isolate overflow-hidden px-4 pb-20 pt-28 sm:px-6 sm:pb-24 sm:pt-36">
-        <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-          <div className="absolute -left-40 top-12 h-80 w-80 rounded-full bg-[var(--color-brand-500)]/10 blur-3xl" />
-          <div className="absolute -right-32 top-20 h-96 w-96 rounded-full bg-[var(--color-brand-400)]/10 blur-3xl" />
-          <div className="absolute bottom-0 left-1/2 h-48 w-2/3 -translate-x-1/2 rounded-full bg-[var(--color-brand-500)]/5 blur-3xl" />
-        </div>
-
-        <div className="mx-auto grid max-w-6xl items-center gap-14 lg:grid-cols-[1.05fr_0.95fr] lg:gap-12">
-          <div className="text-center lg:text-left">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[var(--color-brand-500)]/25 bg-[var(--color-brand-600)]/10 px-3.5 py-1.5 text-xs font-semibold text-[var(--color-brand-400)] shadow-sm">
-              <Leaf className="h-3.5 w-3.5" />
-              Islamic lifestyle · Habit tracking
-            </div>
-
-            <h1 className="mx-auto max-w-3xl font-display text-4xl font-semibold tracking-tight text-[var(--color-text)] sm:text-5xl md:text-6xl lg:mx-0">
-              Build better days with{' '}
-              <span className="text-[var(--color-brand-400)]">
-                calm, consistent habits
-              </span>
-            </h1>
-
-            <p className="mx-auto mt-5 max-w-xl text-base text-[var(--color-text-secondary)] sm:text-lg lg:mx-0">
-              Log good and bad habits, track streaks, mood, and daily scores — designed for focus,
-              not noise. Replace bad habits with good ones over real multi-day progress.
-            </p>
-
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
-              <button
-                type="button"
-                onClick={() => go('/register')}
-                className="group inline-flex items-center gap-2 rounded-xl bg-[var(--color-brand-600)] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-[var(--color-brand-600)]/20 transition hover:-translate-y-1 hover:bg-[var(--color-brand-500)] hover:shadow-xl"
-              >
-                Start free
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-              </button>
-
-              <button
-                type="button"
-                onClick={() => go('/login')}
-                className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]/70 px-6 py-3 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-brand-500)]/40 hover:bg-[var(--color-surface)]"
-              >
-                Sign in
-              </button>
-            </div>
-
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-[var(--color-text-muted)] lg:justify-start">
-              <span className="inline-flex items-center gap-1.5">
-                <CheckCircle2 className="h-3.5 w-3.5 text-[var(--color-brand-400)]" />
-                Free to use
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <CheckCircle2 className="h-3.5 w-3.5 text-[var(--color-brand-400)]" />
-                Simple daily tracking
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <CheckCircle2 className="h-3.5 w-3.5 text-[var(--color-brand-400)]" />
-                Progress over time
-              </span>
-            </div>
-          </div>
-
-          {/* Decorative habit preview */}
-          <div className="relative mx-auto w-full max-w-lg">
-            <div className="absolute -inset-5 rounded-[2rem] bg-[var(--color-brand-500)]/10 blur-2xl" />
-
-            <div className="relative rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-2xl shadow-black/10 sm:p-6">
-              <div className="mb-5 flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-xs font-medium text-[var(--color-text-muted)]">
-                    YOUR DAILY ROUTINE
-                  </p>
-                  <h3 className="mt-1 text-base font-semibold text-[var(--color-text)]">
-                    Small steps, meaningful progress
-                  </h3>
-                </div>
-                <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--color-brand-600)]/15 text-[var(--color-brand-400)]">
-                  <Leaf className="h-5 w-5" />
-                </span>
+      <main>
+        {/* Hero */}
+        <section className="relative px-4 pb-20 pt-32 sm:px-6 sm:pb-28 sm:pt-40">
+          <div className="mx-auto grid max-w-6xl items-center gap-14 lg:grid-cols-[1fr_0.9fr] lg:gap-16">
+            <div className="max-w-2xl">
+              <div className="mb-6 flex items-center gap-2 text-xs font-semibold text-[var(--color-brand-400)]">
+                <span className="h-px w-8 bg-[var(--color-brand-500)]" />
+                PERSONAL GROWTH, MADE PRACTICAL
               </div>
 
-              <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] p-4">
-                <div className="mb-3 flex items-center justify-between">
-                  <p className="text-sm font-semibold text-[var(--color-text)]">
-                    Good habits
-                  </p>
-                  <span className="rounded-full bg-[var(--color-success)]/10 px-2.5 py-1 text-xs font-semibold text-[var(--color-success)]">
-                    Build consistency
+              <h1 className="font-display text-4xl font-semibold tracking-tight text-[var(--color-text)] sm:text-5xl md:text-6xl">
+                Build better days with{' '}
+                <span className="text-[var(--color-brand-400)]">
+                  calm, consistent habits
+                </span>
+              </h1>
+
+              <p className="mt-5 max-w-xl text-base text-[var(--color-text-secondary)] sm:text-lg">
+                Log good and bad habits, track streaks, mood, and daily scores — designed for focus,
+                not noise. Replace bad habits with good ones over real multi-day progress.
+              </p>
+
+              <div className="mt-8 flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => go('/register')}
+                  className="group inline-flex items-center gap-2 rounded-lg bg-[var(--color-brand-600)] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[var(--color-brand-500)]"
+                >
+                  Start free
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => go('/login')}
+                  className="rounded-lg border border-[var(--color-border)] px-6 py-3 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-border-hover)] hover:bg-[var(--color-surface)]"
+                >
+                  Sign in
+                </button>
+              </div>
+
+              <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-[var(--color-text-muted)]">
+                <span className="inline-flex items-center gap-1.5">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-[var(--color-brand-400)]" />
+                  Free to use
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-[var(--color-brand-400)]" />
+                  Simple daily tracking
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-[var(--color-brand-400)]" />
+                  Progress over time
+                </span>
+              </div>
+            </div>
+
+            {/* Editorial product preview */}
+            <div className="relative mx-auto w-full max-w-lg">
+              <div className="border-y border-[var(--color-border)] py-5 sm:py-7">
+                <div className="mb-6 flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-xs font-semibold tracking-wide text-[var(--color-text-muted)]">
+                      A DAY IN YOUR LIFE
+                    </p>
+                    <h3 className="mt-1 text-base font-semibold text-[var(--color-text)]">
+                      Small steps, meaningful progress
+                    </h3>
+                  </div>
+                  <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-600)]/12 text-[var(--color-brand-400)]">
+                    <Leaf className="h-5 w-5" />
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
-                  {GOOD_HABITS.slice(0, 4).map((habit) => (
+                <div className="flex items-center justify-between border-b border-[var(--color-border)] pb-3">
+                  <p className="text-sm font-semibold text-[var(--color-text)]">Good habits</p>
+                  <span className="text-xs text-[var(--color-text-muted)]">Build consistency</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-x-5">
+                  {GOOD_HABITS.slice(0, 4).map((habit, index) => (
                     <div
                       key={habit.label}
-                      className="flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-3 transition hover:border-[var(--color-brand-500)]/30"
+                      className="flex items-center gap-2 border-b border-[var(--color-border)] py-3"
                     >
                       <span className="text-base">{habit.emoji}</span>
                       <span className="text-xs text-[var(--color-text-secondary)]">
@@ -398,230 +376,215 @@ export default function LandingPage() {
                     </div>
                   ))}
                 </div>
-              </div>
 
-              <div className="mt-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] p-4">
-                <div className="mb-3 flex items-center justify-between">
-                  <p className="text-sm font-semibold text-[var(--color-text)]">
-                    Habits to improve
-                  </p>
-                  <span className="rounded-full bg-[var(--color-danger)]/10 px-2.5 py-1 text-xs font-semibold text-[var(--color-danger)]">
-                    Build awareness
-                  </span>
+                <div className="mt-7 flex items-center justify-between border-b border-[var(--color-border)] pb-3">
+                  <p className="text-sm font-semibold text-[var(--color-text)]">Habits to improve</p>
+                  <span className="text-xs text-[var(--color-text-muted)]">Build awareness</span>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
+                <div className="space-y-0">
                   {BAD_HABITS.slice(0, 3).map((habit) => (
-                    <span
+                    <div
                       key={habit.label}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-xs text-[var(--color-text-secondary)]"
+                      className="flex items-center gap-3 border-b border-[var(--color-border)] py-3"
                     >
-                      <span>{habit.emoji}</span>
-                      {habit.label}
+                      <span className="text-base">{habit.emoji}</span>
+                      <span className="text-xs text-[var(--color-text-secondary)]">
+                        {habit.label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-6 flex items-start gap-3">
+                  <TrendingUp className="mt-0.5 h-5 w-5 shrink-0 text-[var(--color-brand-400)]" />
+                  <div>
+                    <p className="text-sm font-semibold text-[var(--color-text)]">
+                      Progress starts with awareness
+                    </p>
+                    <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
+                      Track your actions and learn from each day.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="absolute -right-3 top-8 -z-10 h-24 w-24 border-r border-t border-[var(--color-brand-500)]/25 sm:-right-6" />
+              <div className="absolute -bottom-5 -left-3 -z-10 h-20 w-20 border-b border-l border-[var(--color-brand-500)]/25 sm:-left-6" />
+            </div>
+          </div>
+        </section>
+
+        {/* Features */}
+        <section
+          id="features"
+          className="scroll-mt-24 border-t border-[var(--color-border)] px-4 py-20 sm:px-6"
+        >
+          <div className="mx-auto max-w-6xl">
+            <div className="mb-10 grid gap-4 md:grid-cols-[0.8fr_1.2fr] md:items-end">
+              <div>
+                <p className="mb-3 text-xs font-semibold tracking-wide text-[var(--color-brand-400)]">
+                  WHAT YOU GET
+                </p>
+                <h2 className="font-display text-2xl font-semibold text-[var(--color-text)] sm:text-3xl">
+                  Everything you need to stay consistent
+                </h2>
+              </div>
+              <p className="max-w-xl text-sm text-[var(--color-text-secondary)] md:justify-self-end">
+                Built for daily use — simple logging, clear feedback, real progress. A practical
+                system for understanding the small decisions that shape your days.
+              </p>
+            </div>
+
+            <div className="grid border-t border-[var(--color-border)] sm:grid-cols-2 lg:grid-cols-3">
+              {FEATURES.map(({ icon: Icon, title, desc }, index) => (
+                <article
+                  key={title}
+                  className="border-b border-[var(--color-border)] py-6 sm:px-5 sm:odd:border-r sm:odd:pr-7 sm:even:pl-7 lg:px-6 lg:nth-[3n+1]:border-r lg:nth-[3n+2]:border-r lg:nth-[3n+1]:pl-0 lg:nth-[3n+2]:px-6 lg:nth-[3n]:pr-0"
+                >
+                  <div className="mb-5 flex items-center justify-between">
+                    <Icon className="h-5 w-5 text-[var(--color-brand-400)]" />
+                    <span className="text-xs text-[var(--color-text-muted)]">
+                      0{index + 1}
                     </span>
+                  </div>
+                  <h3 className="text-base font-semibold text-[var(--color-text)]">
+                    {title}
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">
+                    {desc}
+                  </p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Habits */}
+        <section
+          id="habits"
+          className="scroll-mt-24 border-y border-[var(--color-border)] bg-[var(--color-surface)]/35 px-4 py-20 sm:px-6"
+        >
+          <div className="mx-auto max-w-6xl">
+            <div className="mb-10 max-w-2xl">
+              <p className="mb-3 text-xs font-semibold tracking-wide text-[var(--color-brand-400)]">
+                AWARENESS IS THE FIRST STEP
+              </p>
+              <h2 className="font-display text-2xl font-semibold text-[var(--color-text)] sm:text-3xl">
+                What you track each day
+              </h2>
+              <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
+                Default good & bad habits — plus your own custom ones.
+              </p>
+            </div>
+
+            <div className="grid gap-12 lg:grid-cols-2 lg:gap-16">
+              <div>
+                <div className="mb-4 flex items-center justify-between border-b border-[var(--color-border)] pb-4">
+                  <div>
+                    <h3 className="text-sm font-semibold text-[var(--color-success)]">
+                      Good Habits
+                    </h3>
+                    <p className="mt-1 text-xs text-[var(--color-text-muted)]">
+                      Habits worth strengthening
+                    </p>
+                  </div>
+                  <CheckCircle2 className="h-5 w-5 text-[var(--color-success)]" />
+                </div>
+
+                <div className="grid grid-cols-1 gap-x-6 sm:grid-cols-2">
+                  {GOOD_HABITS.map((habit, index) => (
+                    <div
+                      key={habit.label}
+                      className="flex items-center gap-3 border-b border-[var(--color-border)] py-3"
+                    >
+                      <span className="text-base">{habit.emoji}</span>
+                      <span className="text-sm text-[var(--color-text-secondary)]">
+                        {habit.label}
+                      </span>
+                    </div>
                   ))}
                 </div>
               </div>
 
-              <div className="mt-3 flex items-center gap-3 rounded-2xl border border-[var(--color-brand-500)]/20 bg-[var(--color-brand-600)]/10 p-4">
-                <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--color-brand-600)]/15 text-[var(--color-brand-400)]">
-                  <TrendingUp className="h-5 w-5" />
-                </span>
+              <div>
+                <div className="mb-4 flex items-center justify-between border-b border-[var(--color-border)] pb-4">
+                  <div>
+                    <h3 className="text-sm font-semibold text-[var(--color-danger)]">
+                      Bad Habits
+                    </h3>
+                    <p className="mt-1 text-xs text-[var(--color-text-muted)]">
+                      Patterns to become aware of
+                    </p>
+                  </div>
+                  <Flame className="h-5 w-5 text-[var(--color-danger)]" />
+                </div>
+
                 <div>
-                  <p className="text-sm font-semibold text-[var(--color-text)]">
-                    Progress starts with awareness
-                  </p>
-                  <p className="mt-0.5 text-xs text-[var(--color-text-secondary)]">
-                    Track your actions and learn from each day.
-                  </p>
+                  {BAD_HABITS.map((habit) => (
+                    <div
+                      key={habit.label}
+                      className="flex items-center gap-3 border-b border-[var(--color-border)] py-3"
+                    >
+                      <span className="text-base">{habit.emoji}</span>
+                      <span className="text-sm text-[var(--color-text-secondary)]">
+                        {habit.label}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
-
-            <div className="pointer-events-none absolute -right-3 -top-5 -z-10 h-20 w-20 rounded-2xl border border-[var(--color-brand-500)]/20 bg-[var(--color-brand-500)]/5 sm:-right-6" />
-            <div className="pointer-events-none absolute -bottom-5 -left-4 -z-10 h-24 w-24 rounded-full border border-[var(--color-brand-500)]/20 bg-[var(--color-brand-500)]/5 sm:-left-7" />
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Features */}
-      <section
-        id="features"
-        className="scroll-mt-24 border-t border-[var(--color-border)] bg-[var(--color-surface)]/30 px-4 py-20 sm:px-6"
-      >
-        <div className="mx-auto max-w-6xl">
-          <div className="mb-10 text-center">
-            <span className="mb-3 inline-flex rounded-full border border-[var(--color-brand-500)]/25 bg-[var(--color-brand-600)]/10 px-3 py-1 text-xs font-semibold text-[var(--color-brand-400)]">
-              Everything in one place
-            </span>
-            <h2 className="font-display text-2xl font-semibold text-[var(--color-text)] sm:text-3xl">
-              Everything you need to stay consistent
-            </h2>
-            <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-              Built for daily use — simple logging, clear feedback, real progress.
+        {/* How it works */}
+        <section
+          id="how-it-works"
+          className="scroll-mt-24 mx-auto max-w-6xl px-4 py-20 sm:px-6"
+        >
+          <div className="mb-10 grid gap-4 md:grid-cols-[0.8fr_1.2fr] md:items-end">
+            <div>
+              <p className="mb-3 text-xs font-semibold tracking-wide text-[var(--color-brand-400)]">
+                A SIMPLE DAILY PROCESS
+              </p>
+              <h2 className="font-display text-2xl font-semibold text-[var(--color-text)] sm:text-3xl">
+                How it works
+              </h2>
+            </div>
+            <p className="max-w-xl text-sm text-[var(--color-text-secondary)] md:justify-self-end">
+              Three simple steps. No complicated setup. Just a clearer way to understand how
+              your everyday choices add up.
             </p>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {FEATURES.map(({ icon: Icon, title, desc }, index) => (
-              <div
-                key={title}
-                className="group relative overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 text-left transition duration-300 hover:-translate-y-1 hover:border-[var(--color-brand-500)]/40 hover:shadow-xl hover:shadow-[var(--color-brand-500)]/5"
+          <div className="grid border-t border-[var(--color-border)] md:grid-cols-3">
+            {STEPS.map((step) => (
+              <article
+                key={step.num}
+                className="border-b border-[var(--color-border)] py-6 md:border-b-0 md:border-r md:px-6 md:first:pl-0 md:last:border-r-0 md:last:pr-0"
               >
-                <div className="absolute right-0 top-0 h-24 w-24 rounded-full bg-[var(--color-brand-500)]/5 blur-2xl transition group-hover:bg-[var(--color-brand-500)]/10" />
-
-                <div className="relative">
-                  <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--color-brand-600)]/15 text-[var(--color-brand-400)] transition group-hover:bg-[var(--color-brand-600)] group-hover:text-white">
-                    <Icon className="h-5 w-5" />
-                  </div>
-
-                  <span className="mb-2 block text-xs text-[var(--color-text-muted)]">
-                    0{index + 1}
-                  </span>
-
-                  <h3 className="text-base font-semibold text-[var(--color-text)]">
-                    {title}
-                  </h3>
-
-                  <p className="mt-1.5 text-sm leading-relaxed text-[var(--color-text-secondary)]">
-                    {desc}
-                  </p>
-                </div>
-              </div>
+                <span className="mb-5 block text-xs font-semibold tracking-widest text-[var(--color-brand-400)]">
+                  {step.num}
+                </span>
+                <h3 className="text-base font-semibold text-[var(--color-text)]">
+                  {step.title}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">
+                  {step.desc}
+                </p>
+              </article>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Habits */}
-      <section
-        id="habits"
-        className="border-y border-[var(--color-border)] bg-[var(--color-surface)]/50 px-4 py-20 sm:px-6"
-      >
-        <div className="mx-auto max-w-6xl">
-          <div className="mb-10 text-center">
-            <span className="mb-3 inline-flex rounded-full border border-[var(--color-brand-500)]/25 bg-[var(--color-brand-600)]/10 px-3 py-1 text-xs font-semibold text-[var(--color-brand-400)]">
-              Awareness is the first step
-            </span>
-            <h2 className="font-display text-2xl font-semibold text-[var(--color-text)] sm:text-3xl">
-              What you track each day
-            </h2>
-            <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-              Default good & bad habits — plus your own custom ones.
-            </p>
-          </div>
-
-          <div className="grid gap-5 lg:grid-cols-2">
-            <div className="rounded-2xl border border-[var(--color-success)]/20 bg-[var(--color-surface)] p-5 shadow-sm sm:p-6">
-              <div className="mb-5 flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-semibold text-[var(--color-success)]">
-                    Good Habits
-                  </h3>
-                  <p className="mt-1 text-xs text-[var(--color-text-muted)]">
-                    Habits worth strengthening
-                  </p>
-                </div>
-                <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-success)]/10 text-[var(--color-success)]">
-                  <CheckCircle2 className="h-5 w-5" />
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {GOOD_HABITS.map((h) => (
-                  <div
-                    key={h.label}
-                    className="flex items-center gap-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-3 text-sm text-[var(--color-text)] transition hover:border-[var(--color-success)]/30 hover:bg-[var(--color-success)]/5"
-                  >
-                    <span className="text-base">{h.emoji}</span>
-                    {h.label}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-[var(--color-danger)]/20 bg-[var(--color-surface)] p-5 shadow-sm sm:p-6">
-              <div className="mb-5 flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-semibold text-[var(--color-danger)]">
-                    Bad Habits
-                  </h3>
-                  <p className="mt-1 text-xs text-[var(--color-text-muted)]">
-                    Patterns to become aware of
-                  </p>
-                </div>
-                <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-danger)]/10 text-[var(--color-danger)]">
-                  <Flame className="h-5 w-5" />
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {BAD_HABITS.map((h) => (
-                  <div
-                    key={h.label}
-                    className="flex items-center gap-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-3 text-sm text-[var(--color-text)] transition hover:border-[var(--color-danger)]/30 hover:bg-[var(--color-danger)]/5"
-                  >
-                    <span className="text-base">{h.emoji}</span>
-                    {h.label}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* How it works */}
-      <section
-        id="how-it-works"
-        className="scroll-mt-24 mx-auto max-w-6xl px-4 py-20 sm:px-6"
-      >
-        <div className="mb-10 text-center">
-          <span className="mb-3 inline-flex rounded-full border border-[var(--color-brand-500)]/25 bg-[var(--color-brand-600)]/10 px-3 py-1 text-xs font-semibold text-[var(--color-brand-400)]">
-            A simple daily process
-          </span>
-          <h2 className="font-display text-2xl font-semibold text-[var(--color-text)] sm:text-3xl">
-            How it works
-          </h2>
-          <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-            Three simple steps. No complicated setup.
-          </p>
-        </div>
-
-        <div className="relative grid gap-4 md:grid-cols-3">
-          <div className="pointer-events-none absolute left-[16%] right-[16%] top-10 hidden border-t border-dashed border-[var(--color-brand-500)]/30 md:block" />
-
-          {STEPS.map((s) => (
-            <div
-              key={s.num}
-              className="relative rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 transition duration-300 hover:-translate-y-1 hover:border-[var(--color-brand-500)]/40 hover:shadow-lg sm:p-6"
-            >
-              <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-[var(--color-brand-500)]/20 bg-[var(--color-brand-600)]/10 text-[var(--color-brand-400)]">
-                <span className="text-xs font-semibold tracking-widest">{s.num}</span>
-              </div>
-
-              <h3 className="text-base font-semibold text-[var(--color-text)]">
-                {s.title}
-              </h3>
-
-              <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">
-                {s.desc}
+        {/* Grade system */}
+        <section className="border-y border-[var(--color-border)] bg-[var(--color-surface)]/35 px-4 py-16 sm:px-6">
+          <div className="mx-auto grid max-w-6xl gap-8 md:grid-cols-[0.8fr_1.2fr] md:items-center">
+            <div>
+              <p className="mb-3 text-xs font-semibold tracking-wide text-[var(--color-brand-400)]">
+                UNDERSTAND YOUR PROGRESS
               </p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Grade system */}
-      <section className="mx-auto max-w-6xl px-4 pb-20 sm:px-6">
-        <div className="relative overflow-hidden rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm sm:p-9">
-          <div className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-[var(--color-brand-500)]/10 blur-3xl" />
-
-          <div className="relative">
-            <div className="mb-7 text-center">
-              <span className="mb-3 inline-flex rounded-full border border-[var(--color-brand-500)]/25 bg-[var(--color-brand-600)]/10 px-3 py-1 text-xs font-semibold text-[var(--color-brand-400)]">
-                Understand your progress
-              </span>
               <h2 className="font-display text-2xl font-semibold text-[var(--color-text)]">
                 Daily grade system
               </h2>
@@ -630,109 +593,102 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center justify-center gap-3">
-              {GRADES.map((g) => (
+            <div className="grid grid-cols-5 border-y border-[var(--color-border)]">
+              {GRADES.map((grade) => (
                 <div
-                  key={g.grade}
-                  className="min-w-[88px] rounded-xl border px-4 py-3 text-center transition duration-200 hover:-translate-y-1 hover:shadow-md"
+                  key={grade.grade}
+                  className="py-4 text-center"
                   style={{
-                    borderColor: `${g.color}44`,
-                    background: `${g.color}14`
+                    borderRight: grade.grade === 'F' ? 'none' : '1px solid var(--color-border)'
                   }}
                 >
-                  <p className="text-2xl font-semibold" style={{ color: g.color }}>
-                    {g.grade}
+                  <p className="text-2xl font-semibold" style={{ color: grade.color }}>
+                    {grade.grade}
                   </p>
-                  <p className="mt-0.5 text-xs text-[var(--color-text-muted)]">
-                    {g.range}
+                  <p className="mt-1 text-xs text-[var(--color-text-muted)]">
+                    {grade.range}
                   </p>
                 </div>
               ))}
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* FAQ */}
-      <section
-        id="faq"
-        className="scroll-mt-24 border-t border-[var(--color-border)] bg-[var(--color-surface)]/30 px-4 py-20 sm:px-6"
-        aria-labelledby="faq-heading"
-      >
-        <div className="mx-auto max-w-6xl">
-          <div className="mb-8 text-center">
-            <span className="mb-3 inline-flex rounded-full border border-[var(--color-brand-500)]/25 bg-[var(--color-brand-600)]/10 px-3 py-1 text-xs font-semibold text-[var(--color-brand-400)]">
-              Need to know more?
-            </span>
-            <h2
-              id="faq-heading"
-              className="font-display text-2xl font-semibold text-[var(--color-text)] sm:text-3xl"
-            >
-              Frequently asked questions
-            </h2>
-            <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-              Plain answers about LifeTracker, scores, and habit replacement.
-            </p>
-          </div>
-
-          <div className="mx-auto max-w-3xl space-y-3">
-            {LANDING_FAQS.map((item) => (
-              <details
-                key={item.question}
-                className="group rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 transition hover:border-[var(--color-brand-500)]/30"
+        {/* FAQ */}
+        <section
+          id="faq"
+          className="scroll-mt-24 border-b border-[var(--color-border)] px-4 py-20 sm:px-6"
+          aria-labelledby="faq-heading"
+        >
+          <div className="mx-auto grid max-w-6xl gap-8 md:grid-cols-[0.8fr_1.2fr]">
+            <div>
+              <p className="mb-3 text-xs font-semibold tracking-wide text-[var(--color-brand-400)]">
+                GOOD TO KNOW
+              </p>
+              <h2
+                id="faq-heading"
+                className="font-display text-2xl font-semibold text-[var(--color-text)] sm:text-3xl"
               >
-                <summary className="cursor-pointer list-none text-sm font-semibold text-[var(--color-text)] marker:content-none [&::-webkit-details-marker]:hidden">
-                  <span className="flex items-center justify-between gap-3">
-                    {item.question}
-                    <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--color-bg)] text-[var(--color-text-muted)] transition group-open:rotate-45 group-open:bg-[var(--color-brand-600)]/10 group-open:text-[var(--color-brand-400)]">
-                      +
+                Frequently asked questions
+              </h2>
+              <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
+                Plain answers about LifeTracker, scores, and habit replacement.
+              </p>
+            </div>
+
+            <div className="border-t border-[var(--color-border)]">
+              {LANDING_FAQS.map((item) => (
+                <details
+                  key={item.question}
+                  className="group border-b border-[var(--color-border)] py-4"
+                >
+                  <summary className="cursor-pointer list-none text-sm font-semibold text-[var(--color-text)] marker:content-none [&::-webkit-details-marker]:hidden">
+                    <span className="flex items-center justify-between gap-4">
+                      {item.question}
+                      <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[var(--color-border)] text-[var(--color-text-muted)] transition group-open:border-[var(--color-brand-500)] group-open:text-[var(--color-brand-400)]">
+                        +
+                      </span>
                     </span>
-                  </span>
-                </summary>
-
-                <p className="mt-3 border-t border-[var(--color-border)] pt-3 text-sm leading-relaxed text-[var(--color-text-secondary)]">
-                  {item.answer}
-                </p>
-              </details>
-            ))}
+                  </summary>
+                  <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[var(--color-text-secondary)]">
+                    {item.answer}
+                  </p>
+                </details>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Final CTA */}
-      <section className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
-        <div className="relative overflow-hidden rounded-3xl border border-[var(--color-brand-500)]/30 bg-[var(--color-brand-600)]/10 px-6 py-12 text-center sm:px-10 sm:py-14">
-          <div className="pointer-events-none absolute -left-16 -top-24 h-64 w-64 rounded-full bg-[var(--color-brand-500)]/10 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-28 -right-16 h-72 w-72 rounded-full bg-[var(--color-brand-500)]/10 blur-3xl" />
-
-          <div className="relative">
-            <span className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--color-brand-600)]/15 text-[var(--color-brand-400)]">
-              <Leaf className="h-6 w-6" />
-            </span>
-
-            <h2 className="font-display text-2xl font-semibold text-[var(--color-text)] sm:text-3xl">
-              Start building better days today
-            </h2>
-
-            <p className="mx-auto mt-3 max-w-md text-sm text-[var(--color-text-secondary)]">
-              Free to use. Log once a day. Watch your streaks and scores grow.
-            </p>
+        {/* Final CTA */}
+        <section className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
+          <div className="flex flex-col gap-6 border-b border-[var(--color-border)] pb-12 md:flex-row md:items-end md:justify-between">
+            <div className="max-w-2xl">
+              <p className="mb-3 text-xs font-semibold tracking-wide text-[var(--color-brand-400)]">
+                YOUR NEXT CHAPTER STARTS HERE
+              </p>
+              <h2 className="font-display text-2xl font-semibold text-[var(--color-text)] sm:text-3xl">
+                Start building better days today
+              </h2>
+              <p className="mt-3 max-w-md text-sm text-[var(--color-text-secondary)]">
+                Free to use. Log once a day. Watch your streaks and scores grow.
+              </p>
+            </div>
 
             <button
               type="button"
               onClick={() => go('/register')}
-              className="group mt-6 inline-flex items-center gap-2 rounded-xl bg-[var(--color-brand-600)] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-[var(--color-brand-600)]/20 transition hover:-translate-y-1 hover:bg-[var(--color-brand-500)]"
+              className="group inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-[var(--color-brand-600)] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[var(--color-brand-500)]"
             >
               Create free account
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </button>
           </div>
-        </div>
-      </section>
+        </section>
+      </main>
 
       {/* Footer */}
-      <footer className="border-t border-[var(--color-border)] bg-[var(--color-surface)]/40 px-4 py-8 sm:px-6">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 text-center sm:flex-row sm:text-left">
+      <footer className="border-t border-[var(--color-border)] bg-[var(--color-surface)]/30 px-4 py-8 sm:px-6">
+        <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
           <div>
             <p className="text-sm text-[var(--color-text-muted)]">
               <strong className="text-[var(--color-text-secondary)]">LifeTracker</strong> — free
@@ -747,7 +703,7 @@ export default function LandingPage() {
           <button
             type="button"
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            className="inline-flex items-center gap-2 rounded-xl border border-[var(--color-border)] px-3 py-2 text-xs font-semibold text-[var(--color-text-secondary)] transition hover:border-[var(--color-brand-500)]/40 hover:text-[var(--color-brand-400)]"
+            className="inline-flex items-center gap-2 text-xs font-semibold text-[var(--color-text-secondary)] transition hover:text-[var(--color-brand-400)]"
           >
             Back to top
             <ArrowRight className="h-3.5 w-3.5 -rotate-90" />
