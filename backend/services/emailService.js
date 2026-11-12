@@ -108,35 +108,63 @@ async function sendPasswordResetEmail({ to, name, resetUrl }) {
 }
 
 /** Daily log reminder (cron) */
-async function sendDailyReminderEmail({ to, name, logUrl }) {
+/** Daily log reminder (cron) — calm, variant-aware copy */
+async function sendDailyReminderEmail({
+  to,
+  name,
+  logUrl,
+  variant = 'default'
+}) {
+  const who = name || 'there';
+
+  const copy = {
+    default: {
+      subject: 'LifeTracker — log today (1 minute)',
+      body: 'You have not logged today yet. One quick check-in keeps your record honest.'
+    },
+    protect: {
+      subject: 'LifeTracker — keep today’s chain',
+      body: 'You have been showing up. A short log today protects the rhythm you already built.'
+    },
+    comeback: {
+      subject: 'LifeTracker — start a small comeback',
+      body: 'It has been a little while. That is okay. One log today is enough to begin again — no guilt.'
+    },
+    gentle: {
+      subject: 'LifeTracker — a quiet check-in',
+      body: 'Whenever you are ready, a one-minute log helps you see the week clearly.'
+    }
+  };
+
+  const { subject, body } = copy[variant] || copy.default;
+
   if (!process.env.RESEND_API_KEY) {
-    console.info('[email] daily reminder for', to, 'logUrl:', logUrl);
-    return { queued: false, logged: true };
+    console.info('[email] daily reminder', { to, variant, logUrl });
+    return { queued: false, logged: true, variant };
   }
 
   return sendViaResend({
     to,
-    subject: 'LifeTracker — log today (1 minute)',
+    subject,
     html: `
 <!DOCTYPE html>
 <html lang="en">
 <head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/></head>
-<body style="margin:0;padding:0;background:#0f1419;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-<table width="100%" cellspacing="0" cellpadding="0" style="background:#0f1419;padding:32px 16px;"><tr><td align="center">
-<table width="100%" style="max-width:480px;background:#1a222d;border-radius:16px;border:1px solid #2a3544;">
-<tr><td style="padding:28px;text-align:center;">
-<div style="font-size:22px;">🌿</div>
-<h1 style="margin:16px 0 0;font-size:22px;color:#f1f5f9;">LifeTracker</h1>
+<body style="margin:0;padding:0;background:#0f172a;font-family:system-ui,-apple-system,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#0f172a;padding:32px 16px;">
+<tr><td align="center">
+<table width="100%" style="max-width:520px;background:#1e293b;border-radius:16px;overflow:hidden;">
+<tr><td style="padding:28px 28px 0;">
+<p style="margin:0;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#2dd4bf;">Reminder</p>
+<h1 style="margin:12px 0 0;font-size:22px;color:#f1f5f9;">LifeTracker</h1>
 </td></tr>
 <tr><td style="padding:0 28px 28px;">
-<p style="color:#e2e8f0;font-size:16px;">Hi ${name || 'there'},</p>
-<p style="color:#94a3b8;font-size:15px;line-height:1.6;">
-You have not logged today yet. One quick check-in keeps your streak and score honest.
-</p>
+<p style="color:#e2e8f0;font-size:16px;">Hi ${who},</p>
+<p style="color:#94a3b8;font-size:15px;line-height:1.6;">${body}</p>
 <p style="text-align:center;padding:16px 0;">
 <a href="${logUrl}" style="display:inline-block;background:#0d9488;color:#fff;text-decoration:none;font-weight:600;padding:14px 28px;border-radius:12px;">Log today</a>
 </p>
-<p style="font-size:12px;color:#64748b;">You can change reminder time in Settings. Turn reminders off anytime.</p>
+<p style="font-size:12px;color:#64748b;">Change reminder time in Settings. Turn reminders off anytime.</p>
 </td></tr>
 <tr><td style="padding:20px 28px;border-top:1px solid #2a3544;text-align:center;">
 <p style="margin:0;font-size:12px;color:#64748b;">LifeTracker · calm habit tracking</p>

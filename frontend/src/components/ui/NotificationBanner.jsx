@@ -2,6 +2,10 @@ import { useNavigate } from 'react-router-dom';
 import { Bell, X } from 'lucide-react';
 import { useNotification } from '../../contexts/NotificationContext';
 
+/**
+ * In-app log reminder — calm copy (Phase C).
+ * Show/hide logic stays in NotificationContext.
+ */
 export default function NotificationBanner() {
   const { showBanner, dismiss } = useNotification();
   const navigate = useNavigate();
@@ -18,9 +22,9 @@ export default function NotificationBanner() {
         <div className="flex min-w-0 items-center gap-2.5">
           <Bell className="h-4 w-4 shrink-0 text-[var(--color-brand-400)]" />
           <p className="text-sm font-medium text-[var(--color-text)]">
-            You haven&apos;t logged today yet!{' '}
+            No log for today yet.{' '}
             <span className="hidden text-[var(--color-text-secondary)] sm:inline">
-              Keep your streak alive — it only takes a minute.
+              One minute is enough — protect a streak or start a small comeback.
             </span>
           </p>
         </div>
@@ -30,7 +34,7 @@ export default function NotificationBanner() {
             onClick={() => navigate('/log')}
             className="rounded-lg bg-[var(--color-brand-600)] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[var(--color-brand-500)]"
           >
-            Log Now
+            Log now
           </button>
           <button
             type="button"
