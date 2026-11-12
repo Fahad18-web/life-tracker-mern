@@ -330,8 +330,8 @@ export default function Dashboard() {
               aria-controls={`dashboard-panel-${id}`}
               onClick={() => selectTab(id)}
               className={`relative flex items-center justify-center gap-2 rounded-xl px-2 py-3 text-sm font-semibold transition-all duration-200 ${active
-                  ? 'bg-[var(--color-brand-600)] text-white shadow-md shadow-[var(--color-brand-600)]/20'
-                  : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg)] hover:text-[var(--color-text)]'
+                ? 'bg-[var(--color-brand-600)] text-white shadow-md shadow-[var(--color-brand-600)]/20'
+                : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg)] hover:text-[var(--color-text)]'
                 }`}
             >
               <Icon className="h-4 w-4 shrink-0" />
@@ -452,11 +452,24 @@ export default function Dashboard() {
 
       {/* ================= PROGRESS TAB ================= */}
       {tab === 'progress' && (
-        <div
-          id="dashboard-panel-progress"
-          role="tabpanel"
-          className="space-y-5"
-        >
+        <div id="dashboard-panel-progress" role="tabpanel" className="space-y-5">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-[var(--color-text)]">
+                This week’s progress
+              </p>
+              <p className="text-xs text-[var(--color-text-muted)]">
+                Scores, streaks, and a short written review
+              </p>
+            </div>
+            <Link
+              to="/review"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--color-brand-400)] no-underline hover:underline"
+            >
+              Weekly review & reflection
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
           {/* STREAK OVERVIEW */}
           <section className="relative overflow-hidden rounded-2xl border border-[var(--color-brand-500)]/25 bg-[var(--color-brand-600)]/10 p-5 sm:p-6">
             <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-[var(--color-brand-500)]/10 blur-3xl" />
@@ -493,7 +506,6 @@ export default function Dashboard() {
               </div>
             </div>
           </section>
-
           {/* WEEKLY PERFORMANCE */}
           {weekly.length > 0 && (
             <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 sm:p-5">
@@ -517,8 +529,8 @@ export default function Dashboard() {
                     <div
                       key={day.date}
                       className={`rounded-xl border px-1 py-3 text-center transition-all duration-200 hover:-translate-y-0.5 ${isToday
-                          ? 'border-[var(--color-brand-500)] bg-[var(--color-brand-600)]/10 shadow-sm'
-                          : 'border-[var(--color-border)] bg-[var(--color-bg)]/40 hover:border-[var(--color-brand-500)]/30'
+                        ? 'border-[var(--color-brand-500)] bg-[var(--color-brand-600)]/10 shadow-sm'
+                        : 'border-[var(--color-border)] bg-[var(--color-bg)]/40 hover:border-[var(--color-brand-500)]/30'
                         }`}
                     >
                       <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">

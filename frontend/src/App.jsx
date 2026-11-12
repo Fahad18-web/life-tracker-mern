@@ -24,6 +24,7 @@ const Trends = lazy(() => import('./pages/Trends'));
 const ManageHabits = lazy(() => import('./pages/ManageHabits'));
 const Profile = lazy(() => import('./pages/Profile'));
 const HabitReplacementPage = lazy(() => import('./pages/HabitReplacementPage'));
+const WeeklyReview = lazy(() => import('./pages/WeeklyReview'));
 const LandingPage = lazy(() => import('./pages/LandingPage'));
 const Settings = lazy(() => import('./pages/Settings'));
 
@@ -103,6 +104,7 @@ export default function App() {
                 <Route path="/log" element={<ProtectedRoute><AppLayout><Log /></AppLayout></ProtectedRoute>} />
                 <Route path="/history" element={<ProtectedRoute><AppLayout><History /></AppLayout></ProtectedRoute>} />
                 <Route path="/trends" element={<ProtectedRoute><AppLayout><Trends /></AppLayout></ProtectedRoute>} />
+                <Route path="/review" element={<ProtectedRoute><AppLayout><WeeklyReview /></AppLayout></ProtectedRoute>} />
                 <Route path="/habits" element={<ProtectedRoute><AppLayout><ManageHabits /></AppLayout></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><AppLayout><Profile /></AppLayout></ProtectedRoute>} />
                 <Route path="/replacements" element={<ProtectedRoute><AppLayout><HabitReplacementPage /></AppLayout></ProtectedRoute>} />
