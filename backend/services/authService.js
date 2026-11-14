@@ -4,6 +4,7 @@ const { normalizeHabitName } = require('../utils/habitCatalog');
 const AppError = require('../utils/AppError');
 const { createEmailToken, createPasswordResetToken, hashEmailToken } = require('../utils/emailToken');
 const { sendVerificationEmail, sendPasswordResetEmail } = require('./emailService');
+const { normalizeTimeZone } = require('../utils/dateUtils');
 
 function publicUser(user) {
   return {
@@ -11,6 +12,7 @@ function publicUser(user) {
     name: user.name,
     email: user.email,
     avatar: user.avatar || null,
+    timezone: normalizeTimeZone(user.timezone),
     emailVerified: Boolean(user.emailVerified),
     onboardingCompleted: Boolean(user.onboardingCompleted),
     preferences: user.preferences

@@ -3,6 +3,7 @@ const Entry = require('../models/Entry');
 const CustomHabit = require('../models/CustomHabit');
 const { isValidAvatar } = require('../config/avatarPresets');
 const { validatePassword } = require('../utils/passwordPolicy');
+const { normalizeTimeZone } = require('../utils/dateUtils');
 
 const calcOverallStreak = (entries) => {
   if (!entries.length) return 0;
@@ -57,7 +58,8 @@ const getProfile = async (req, res, next) => {
         avatar: req.user.avatar || null,
         emailVerified: Boolean(req.user.emailVerified),
         onboardingCompleted: Boolean(req.user.onboardingCompleted),
-        createdAt: req.user.createdAt
+        createdAt: req.user.createdAt,
+        timezone: normalizeTimeZone(req.user.timezone)
       },
       stats: {
         totalEntries,
@@ -120,7 +122,8 @@ const updateProfile = async (req, res, next) => {
         email: user.email,
         avatar: user.avatar || null,
         emailVerified: Boolean(user.emailVerified),
-        onboardingCompleted: Boolean(user.onboardingCompleted)
+        onboardingCompleted: Boolean(user.onboardingCompleted),
+        timezone: normalizeTimeZone(user.timezone)
       }
     });
   } catch (err) {
@@ -222,7 +225,8 @@ const completeOnboarding = async (req, res, next) => {
         avatar: user.avatar || null,
         emailVerified: Boolean(user.emailVerified),
         onboardingCompleted: true,
-        preferences: user.preferences
+        preferences: user.preferences,
+        timezone: normalizeTimeZone(user.timezone)
       }
     });
   } catch (err) {
