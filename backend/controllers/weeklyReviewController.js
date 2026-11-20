@@ -1,13 +1,20 @@
+
 const weeklyReviewService = require('../services/weeklyReviewService');
 const { success } = require('../utils/apiResponse');
 
 const getWeek = async (req, res, next) => {
   try {
     const weekStart = req.query.weekStart;
-    const data = await weeklyReviewService.getWeek(req.user._id, weekStart);
+
+    const data = await weeklyReviewService.getWeek(
+      req.user._id,
+      weekStart,
+      req.user.timezone
+    );
+
     return success(res, data);
   } catch (err) {
-    next(err);
+    return next(err);
   }
 };
 
@@ -17,24 +24,32 @@ const getHistory = async (req, res, next) => {
       req.user._id,
       req.query.limit
     );
+
     return success(res, { history });
   } catch (err) {
-    next(err);
+    return next(err);
   }
 };
 
 const upsertWeek = async (req, res, next) => {
   try {
     const weekStart = req.params.weekStart;
+
     const data = await weeklyReviewService.upsert(
       req.user._id,
       weekStart,
-      req.body || {}
+      req.body || {},
+      req.user.timezone
     );
+
     return success(res, data);
   } catch (err) {
-    next(err);
+    return next(err);
   }
 };
 
-module.exports = { getWeek, getHistory, upsertWeek };
+module.exports = {
+  getWeek,
+  getHistory,
+  upsertWeek
+};

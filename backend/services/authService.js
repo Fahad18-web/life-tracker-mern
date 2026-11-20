@@ -1,9 +1,17 @@
+
 const User = require('../models/User');
 const generateToken = require('../utils/generateToken');
 const { normalizeHabitName } = require('../utils/habitCatalog');
 const AppError = require('../utils/AppError');
-const { createEmailToken, createPasswordResetToken, hashEmailToken } = require('../utils/emailToken');
-const { sendVerificationEmail, sendPasswordResetEmail } = require('./emailService');
+const {
+  createEmailToken,
+  createPasswordResetToken,
+  hashEmailToken
+} = require('../utils/emailToken');
+const {
+  sendVerificationEmail,
+  sendPasswordResetEmail
+} = require('./emailService');
 const { normalizeTimeZone } = require('../utils/dateUtils');
 
 function publicUser(user) {
@@ -30,7 +38,11 @@ class AuthService {
     }
 
     const normalizedEmail = String(email).toLowerCase().trim();
-    const existing = await User.findOne({ email: normalizedEmail });
+
+    const existing = await User.findOne({
+      email: normalizedEmail
+    });
+
     if (existing) {
       throw new AppError('Email already registered', 400);
     }
@@ -41,7 +53,11 @@ class AuthService {
       name: String(name).trim(),
       email: normalizedEmail,
       passwordHash: password,
-      timezone: timezone || 'Asia/Karachi',
+
+      // Store only a supported IANA timezone.
+      // Missing or invalid values fall back to Asia/Karachi.
+      timezone: normalizeTimeZone(timezone),
+
       emailVerified: false,
       emailVerificationToken: hash,
       emailVerificationExpires: expires
@@ -57,10 +73,10 @@ class AuthService {
       });
     } catch (err) {
       console.error('[auth] verification email failed:', err.message);
-      // Account remains; user can resend from check-email page
+      // Account remains; user can resend from check-email page.
     }
 
-    // No JWT until email is verified
+    // No JWT until email is verified.
     return {
       requiresVerification: true,
       message: 'Check your email for a verification link before signing in.',
@@ -103,6 +119,7 @@ class AuthService {
     }
 
     const hash = hashEmailToken(rawToken);
+
     const user = await User.findOne({
       emailVerificationToken: hash,
       emailVerificationExpires: { $gt: new Date() }
@@ -115,6 +132,7 @@ class AuthService {
     user.emailVerified = true;
     user.emailVerificationToken = undefined;
     user.emailVerificationExpires = undefined;
+
     await user.save();
 
     return {
@@ -145,8 +163,10 @@ class AuthService {
     }
 
     const { raw, hash, expires } = createEmailToken();
+
     user.emailVerificationToken = hash;
     user.emailVerificationExpires = expires;
+
     await user.save();
 
     const verifyUrl = `${clientBaseUrl()}/verify-email?token=${raw}`;
@@ -164,6 +184,7 @@ class AuthService {
 
     return generic;
   }
+
   async forgotPassword(email) {
     const generic = {
       message:
@@ -181,8 +202,10 @@ class AuthService {
     if (!user) return generic;
 
     const { raw, hash, expires } = createPasswordResetToken();
+
     user.passwordResetToken = hash;
     user.passwordResetExpires = expires;
+
     await user.save({ validateBeforeSave: false });
 
     const resetUrl = `${clientBaseUrl()}/reset-password?token=${raw}`;
@@ -196,8 +219,10 @@ class AuthService {
     } catch (err) {
       user.passwordResetToken = undefined;
       user.passwordResetExpires = undefined;
+
       await user.save({ validateBeforeSave: false });
-      console.error('[auth] password reset email failed:', err.message);
+
+      console.error('[auth] password reset failed:', err.message);
       throw new AppError('Could not send reset email. Try again later.', 502);
     }
 
@@ -208,11 +233,13 @@ class AuthService {
     if (!token || typeof token !== 'string') {
       throw new AppError('Invalid or missing reset token', 400);
     }
+
     if (!password || String(password).length < 8) {
       throw new AppError('Password must be at least 8 characters', 400);
     }
 
     const hash = hashEmailToken(token);
+
     const user = await User.findOne({
       passwordResetToken: hash,
       passwordResetExpires: { $gt: new Date() }
@@ -225,12 +252,14 @@ class AuthService {
     user.passwordHash = password;
     user.passwordResetToken = undefined;
     user.passwordResetExpires = undefined;
+
     await user.save();
 
     return {
       message: 'Password updated. You can sign in with your new password.'
     };
   }
+
   async updatePreferences(userId, updates) {
     const allowed = {};
 
@@ -238,31 +267,41 @@ class AuthService {
       if (!['dark', 'light'].includes(updates.theme)) {
         throw new AppError('Invalid theme. Use dark or light.', 400);
       }
+
       allowed.theme = updates.theme;
     }
 
     if (updates.themePreset !== undefined) {
-      if (!['teal', 'ocean', 'amber', 'forest', 'rose', 'ember'].includes(updates.themePreset)) {
+      if (
+        !['teal', 'ocean', 'amber', 'forest', 'rose', 'ember']
+          .includes(updates.themePreset)
+      ) {
         throw new AppError('Invalid theme preset.', 400);
       }
+
       allowed.themePreset = updates.themePreset;
     }
+
     if (updates.dailyReminderEnabled !== undefined) {
       allowed.dailyReminderEnabled = Boolean(updates.dailyReminderEnabled);
     }
 
     if (updates.dailyReminderHour !== undefined) {
-      const h = Number(updates.dailyReminderHour);
-      if (!Number.isInteger(h) || h < 0 || h > 23) {
+      const hour = Number(updates.dailyReminderHour);
+
+      if (!Number.isInteger(hour) || hour < 0 || hour > 23) {
         throw new AppError('dailyReminderHour must be 0–23', 400);
       }
-      allowed.dailyReminderHour = h;
+
+      allowed.dailyReminderHour = hour;
     }
 
     if (Array.isArray(updates.customHabits)) {
       allowed.customHabits = updates.customHabits
         .map((habit, index) => ({
-          key: normalizeHabitName(habit.key || habit.name || `custom-${index}`)
+          key: normalizeHabitName(
+            habit.key || habit.name || `custom-${index}`
+          )
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, '-'),
           name: normalizeHabitName(habit.name),
@@ -272,12 +311,23 @@ class AuthService {
     }
 
     const currentUser = await User.findById(userId).select('preferences');
-    if (!currentUser) throw new AppError('User not found', 404);
+
+    if (!currentUser) {
+      throw new AppError('User not found', 404);
+    }
 
     const user = await User.findByIdAndUpdate(
       userId,
-      { preferences: { ...currentUser.preferences.toObject(), ...allowed } },
-      { new: true, runValidators: true }
+      {
+        preferences: {
+          ...currentUser.preferences.toObject(),
+          ...allowed
+        }
+      },
+      {
+        new: true,
+        runValidators: true
+      }
     );
 
     return user.preferences;

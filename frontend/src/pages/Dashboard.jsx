@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 
 import { useAuth } from '../contexts/AuthContext';
+import { getDateKey, normalizeTimeZone } from '../utils/dateKey';
 import { getDashboard } from '../api/analyticsAPI';
 
 import MissedDayBanner from '../components/ui/MissedDayBanner';
@@ -34,8 +35,6 @@ import DailyRitualCard from '../components/DailyRitualCard';
 import ActiveReplacementStrip from '../components/ActiveReplacementStrip';
 import TimeAmbient from '../components/TimeAmbient';
 import ActivityHeatmap from '../components/ActivityHeatmap';
-
-const TODAY = () => new Date().toISOString().split('T')[0];
 
 const TABS = [
   { id: 'today', label: 'Today', icon: Target },
@@ -152,6 +151,17 @@ function LoadingDashboard() {
 export default function Dashboard() {
   const { user } = useAuth();
 
+  const currentDate = new Date();
+  const timeZone = normalizeTimeZone(user?.timezone);
+  const todayDateKey = getDateKey(currentDate, timeZone);
+  const formattedDate = currentDate.toLocaleDateString('en-PK', {
+    timeZone,
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+
   const [tab, setTab] = useState(readTab);
   const [today, setToday] = useState(null);
   const [weekly, setWeekly] = useState([]);
@@ -249,13 +259,6 @@ export default function Dashboard() {
   const todayGrade = today?.grade ?? null;
   const firstName = user?.name?.split(' ')[0] || 'there';
 
-  const formattedDate = new Date().toLocaleDateString('en-PK', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-
   return (
     <div className="dashboard-page space-y-5">
 
@@ -274,12 +277,7 @@ export default function Dashboard() {
 
           <p className="dashboard-date">
             <CalendarDays size={15} />
-            {new Date().toLocaleDateString('en-PK', {
-              weekday: 'long',
-              day: 'numeric',
-              month: 'long',
-              year: 'numeric'
-            })}
+            {formattedDate}
           </p>
         </div>
 
@@ -517,7 +515,7 @@ export default function Dashboard() {
 
               <div className="grid grid-cols-7 gap-2">
                 {weekly.map((day) => {
-                  const isToday = day.date === TODAY();
+                  const isToday = day.date === todayDateKey;
 
                   const label = new Date(
                     day.date + 'T12:00:00'

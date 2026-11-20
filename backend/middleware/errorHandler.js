@@ -1,62 +1,103 @@
+
+'use strict';
+
 const config = require('../config');
 const logger = require('../utils/logger');
 
-const errorHandler = (err, req, res, next) => {
-  let statusCode = err.statusCode || 500;
-  let message = err.message || 'Internal Server Error';
+const INTERNAL_SERVER_ERROR = 'Internal Server Error';
 
-  // Mongoose bad ObjectId
+const isValidStatusCode = (statusCode) => {
+  return (
+    Number.isInteger(statusCode) &&
+    statusCode >= 400 &&
+    statusCode <= 599
+  );
+};
+
+const getSafeClientMessage = (err, statusCode) => {
+  // Never expose internal server errors in production.
+  if (statusCode >= 500 && !config.isDev) {
+    return INTERNAL_SERVER_ERROR;
+  }
+
   if (err.name === 'CastError') {
-    message = 'Resource not found';
-    statusCode = 404;
+    return 'Resource not found';
   }
 
-  // Mongoose duplicate key
   if (err.code === 11000) {
-    const field = Object.keys(err.keyValue || {})[0] || 'Field';
-    message = `${field.charAt(0).toUpperCase() + field.slice(1)} already exists`;
-    statusCode = 400;
+    const field = Object.keys(err.keyPattern || {})[0];
+
+    return field
+      ? `${field} already exists`
+      : 'Duplicate resource';
   }
 
-  // Mongoose validation error
   if (err.name === 'ValidationError') {
-    message = Object.values(err.errors || {})
-      .map(e => e.message)
-      .join(', ');
-    statusCode = 400;
+    return Object.values(err.errors || {})
+      .map((error) => error.message)
+      .join(', ') || 'Validation failed';
   }
 
-  // JWT errors
   if (err.name === 'JsonWebTokenError') {
-    message = 'Invalid token';
-    statusCode = 401;
+    return 'Invalid token';
   }
 
   if (err.name === 'TokenExpiredError') {
-    message = 'Token expired';
-    statusCode = 401;
+    return 'Token expired';
   }
 
-  // Log error
+  if (err.name === 'NotBeforeError') {
+    return 'Token not active';
+  }
+
+  return err.message || INTERNAL_SERVER_ERROR;
+};
+
+const errorHandler = (err, req, res, next) => {
+  // Headers may already have been sent by another middleware.
+  // Delegate to Express instead of attempting another response.
+  if (res.headersSent) {
+    return next(err);
+  }
+
+  let statusCode = err.statusCode || err.status || 500;
+
+  // Invalid or unsafe HTTP status codes must become 500.
+  if (!isValidStatusCode(statusCode)) {
+    statusCode = 500;
+  }
+
+  const message = getSafeClientMessage(err, statusCode);
+
+  // Never include query strings in error logs.
+  const requestPath = req.path || '/';
+
+  const logMetadata = {
+    path: requestPath,
+    method: req.method,
+    statusCode
+  };
+
   if (statusCode >= 500) {
     logger.error(message, {
-      stack: err.stack,
-      path: req.originalUrl,
-      method: req.method
+      ...logMetadata,
+      stack: err.stack
     });
   } else {
-    logger.warn(message, {
-      path: req.originalUrl,
-      method: req.method,
-      statusCode
-    });
+    logger.warn(message, logMetadata);
   }
 
-  res.status(statusCode).json({
+  const response = {
     success: false,
-    message,
-    ...(config.isDev && { stack: err.stack })
-  });
+    message
+  };
+
+  // Stack traces are available only in development.
+  if (config.isDev && err.stack) {
+    response.stack = err.stack;
+  }
+
+  return res.status(statusCode).json(response);
 };
 
 module.exports = errorHandler;

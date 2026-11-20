@@ -22,9 +22,9 @@ import {
 import { fetchEntryDate, saveEntry } from '../api/entriesAPI';
 import { fetchCustomHabits } from '../api/customHabitsAPI';
 import { useNotification } from '../contexts/NotificationContext';
+import { useAuth } from '../contexts/AuthContext';
+import { getDateKey, normalizeTimeZone } from '../utils/dateKey';
 import ReplacementCoach from '../components/log/ReplacementCoach';
-
-const TODAY = () => new Date().toISOString().split('T')[0];
 
 const INITIAL_GOOD = {
   morning: false,
@@ -135,6 +135,7 @@ function HabitChip({ active, bad = false, onClick, children }) {
 
 export default function Log() {
   const { markLogged } = useNotification();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   const [good, setGood] = useState({ ...INITIAL_GOOD });
@@ -147,7 +148,18 @@ export default function Log() {
   const [saving, setSaving] = useState(false);
   const [existingId, setExistingId] = useState(null);
 
-  const today = TODAY();
+  // Resolve today's date using the authenticated user's timezone.
+  const currentDate = new Date();
+  const timeZone = normalizeTimeZone(user?.timezone);
+  const today = getDateKey(currentDate, timeZone);
+
+  const formattedDate = currentDate.toLocaleDateString('en-PK', {
+    timeZone,
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
 
   const loadData = useCallback(async () => {
     try {
@@ -192,7 +204,7 @@ export default function Log() {
         );
       }
     } catch {
-      // ignore
+      // Preserve the existing behavior for load failures.
     } finally {
       setLoading(false);
     }
@@ -266,12 +278,7 @@ export default function Log() {
           </h1>
 
           <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-            {new Date().toLocaleDateString('en-PK', {
-              weekday: 'long',
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-            })}
+            {formattedDate}
           </p>
 
           <p className="lt-help mt-1 max-w-md">

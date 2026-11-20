@@ -1,32 +1,45 @@
+
+'use strict';
+
 const User = require('../models/User');
 const Entry = require('../models/Entry');
 const CustomHabit = require('../models/CustomHabit');
 const { isValidAvatar } = require('../config/avatarPresets');
 const { validatePassword } = require('../utils/passwordPolicy');
-const { normalizeTimeZone } = require('../utils/dateUtils');
+const {
+  addDaysToDateString,
+  getTodayInTimeZone,
+  normalizeTimeZone
+} = require('../utils/dateUtils');
 
-const calcOverallStreak = (entries) => {
-  if (!entries.length) return 0;
-  const sorted = [...entries].sort((a, b) => b.date.localeCompare(a.date));
-  let streak = 0;
-  const today = new Date();
-  const checkDate = new Date(today);
-
-  for (const entry of sorted) {
-    const expected = checkDate.toISOString().split('T')[0];
-    if (entry.date === expected) {
-      streak++;
-      checkDate.setDate(checkDate.getDate() - 1);
-    } else {
-      if (expected === today.toISOString().split('T')[0] && streak === 0) {
-        checkDate.setDate(checkDate.getDate() - 1);
-        if (entry.date === checkDate.toISOString().split('T')[0]) {
-          streak++;
-          checkDate.setDate(checkDate.getDate() - 1);
-        } else break;
-      } else break;
-    }
+const calcOverallStreak = (entries, timeZone) => {
+  if (!Array.isArray(entries) || entries.length === 0) {
+    return 0;
   }
+
+  const normalizedTimeZone = normalizeTimeZone(timeZone);
+  const today = getTodayInTimeZone(normalizedTimeZone);
+
+  // A Set avoids duplicate dates affecting the streak calculation.
+  const entryDates = new Set(
+    entries
+      .map((entry) => entry?.date)
+      .filter((date) => typeof date === 'string')
+  );
+
+  // Preserve existing behavior: an unlogged current day does not
+  // immediately break a streak that continued through yesterday.
+  let currentDate = entryDates.has(today)
+    ? today
+    : addDaysToDateString(today, -1);
+
+  let streak = 0;
+
+  while (entryDates.has(currentDate)) {
+    streak += 1;
+    currentDate = addDaysToDateString(currentDate, -1);
+  }
+
   return streak;
 };
 
@@ -36,20 +49,34 @@ const getProfile = async (req, res, next) => {
 
     const totalEntries = entries.length;
     const avgScore = totalEntries
-      ? Math.round(entries.reduce((s, e) => s + (e.netScore || 0), 0) / totalEntries)
+      ? Math.round(
+          entries.reduce((s, e) => s + (e.netScore || 0), 0) /
+            totalEntries
+        )
       : 0;
-    const overallStreak = calcOverallStreak(entries);
+
+    const overallStreak = calcOverallStreak(
+      entries,
+      req.user.timezone
+    );
+
     const bestEntry = entries.reduce(
       (a, b) => (a?.netScore > b?.netScore ? a : b),
       entries[0]
     );
+
     const gradeCounts = entries.reduce((acc, e) => {
-      if (e.grade) acc[e.grade] = (acc[e.grade] || 0) + 1;
+      if (e.grade) {
+        acc[e.grade] = (acc[e.grade] || 0) + 1;
+      }
       return acc;
     }, {});
-    const customHabitsCount = await CustomHabit.countForUser(req.user._id);
 
-    res.json({
+    const customHabitsCount = await CustomHabit.countForUser(
+      req.user._id
+    );
+
+    return res.json({
       success: true,
       user: {
         _id: req.user._id,
@@ -72,14 +99,17 @@ const getProfile = async (req, res, next) => {
       }
     });
   } catch (err) {
-    next(err);
+    return next(err);
   }
 };
 
 const updateProfile = async (req, res, next) => {
   try {
     const { name, email, avatar } = req.body;
-    const hasAvatar = Object.prototype.hasOwnProperty.call(req.body, 'avatar');
+    const hasAvatar = Object.prototype.hasOwnProperty.call(
+      req.body,
+      'avatar'
+    );
 
     if (!name && !email && !hasAvatar) {
       return res.status(400).json({
@@ -96,7 +126,10 @@ const updateProfile = async (req, res, next) => {
     }
 
     if (email && email !== req.user.email) {
-      const exists = await User.findOne({ email: email.toLowerCase() });
+      const exists = await User.findOne({
+        email: email.toLowerCase()
+      });
+
       if (exists) {
         return res.status(400).json({
           success: false,
@@ -106,14 +139,17 @@ const updateProfile = async (req, res, next) => {
     }
 
     const user = await User.findById(req.user._id);
+
     if (name) user.name = name.trim();
     if (email) user.email = email.toLowerCase().trim();
+
     if (hasAvatar) {
       user.avatar = avatar === '' || avatar === null ? null : avatar;
     }
+
     await user.save();
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Profile updated.',
       user: {
@@ -127,13 +163,14 @@ const updateProfile = async (req, res, next) => {
       }
     });
   } catch (err) {
-    next(err);
+    return next(err);
   }
 };
 
 const changePassword = async (req, res, next) => {
   try {
     const { currentPassword, newPassword } = req.body;
+
     if (!currentPassword || !newPassword) {
       return res.status(400).json({
         success: false,
@@ -142,6 +179,7 @@ const changePassword = async (req, res, next) => {
     }
 
     const policy = validatePassword(newPassword);
+
     if (!policy.ok) {
       return res.status(400).json({
         success: false,
@@ -149,8 +187,12 @@ const changePassword = async (req, res, next) => {
       });
     }
 
-    const user = await User.findById(req.user._id).select('+passwordHash');
+    const user = await User.findById(req.user._id).select(
+      '+passwordHash'
+    );
+
     const match = await user.comparePassword(currentPassword);
+
     if (!match) {
       return res.status(401).json({
         success: false,
@@ -161,15 +203,19 @@ const changePassword = async (req, res, next) => {
     user.passwordHash = newPassword;
     await user.save();
 
-    res.json({ success: true, message: 'Password changed successfully.' });
+    return res.json({
+      success: true,
+      message: 'Password changed successfully.'
+    });
   } catch (err) {
-    next(err);
+    return next(err);
   }
 };
 
 const deleteAccount = async (req, res, next) => {
   try {
     const { password } = req.body;
+
     if (!password) {
       return res.status(400).json({
         success: false,
@@ -177,8 +223,12 @@ const deleteAccount = async (req, res, next) => {
       });
     }
 
-    const user = await User.findById(req.user._id).select('+passwordHash');
+    const user = await User.findById(req.user._id).select(
+      '+passwordHash'
+    );
+
     const match = await user.comparePassword(password);
+
     if (!match) {
       return res.status(401).json({
         success: false,
@@ -192,12 +242,12 @@ const deleteAccount = async (req, res, next) => {
       User.findByIdAndDelete(req.user._id)
     ]);
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Account and all data permanently deleted.'
     });
   } catch (err) {
-    next(err);
+    return next(err);
   }
 };
 
@@ -216,7 +266,7 @@ const completeOnboarding = async (req, res, next) => {
       });
     }
 
-    res.json({
+    return res.json({
       success: true,
       user: {
         id: user._id,
@@ -230,7 +280,7 @@ const completeOnboarding = async (req, res, next) => {
       }
     });
   } catch (err) {
-    next(err);
+    return next(err);
   }
 };
 

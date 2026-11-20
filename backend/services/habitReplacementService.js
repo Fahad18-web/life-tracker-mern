@@ -1,6 +1,16 @@
+
+'use strict';
+
 const HabitReplacement = require('../models/HabitReplacement');
 const Entry = require('../models/Entry');
 const AppError = require('../utils/AppError');
+
+const {
+  addDaysToDateString,
+  getDateStringInTimeZone,
+  getTodayInTimeZone,
+  normalizeTimeZone
+} = require('../utils/dateUtils');
 
 const MAX_PAIRS = 8;
 const ALLOWED_WINDOWS = [7, 14, 21, 30];
@@ -10,9 +20,14 @@ const badAvoided = (entry, habitKey, isCustom) => {
     const ch = (entry.customHabits || []).find(
       (h) => h.habitId?.toString() === habitKey || h.name === habitKey
     );
+
     return ch ? !ch.completed : null;
   }
-  if (!entry.bad || entry.bad[habitKey] === undefined) return null;
+
+  if (!entry.bad || entry.bad[habitKey] === undefined) {
+    return null;
+  }
+
   return !entry.bad[habitKey];
 };
 
@@ -21,9 +36,14 @@ const goodDone = (entry, habitKey, isCustom) => {
     const ch = (entry.customHabits || []).find(
       (h) => h.habitId?.toString() === habitKey || h.name === habitKey
     );
+
     return ch ? !!ch.completed : null;
   }
-  if (!entry.good || entry.good[habitKey] === undefined) return null;
+
+  if (!entry.good || entry.good[habitKey] === undefined) {
+    return null;
+  }
+
   return !!entry.good[habitKey];
 };
 
@@ -31,122 +51,229 @@ function normalizeRules(rules = {}) {
   const windowDays = ALLOWED_WINDOWS.includes(Number(rules.windowDays))
     ? Number(rules.windowDays)
     : 7;
+
   const requireBoth = rules.requireBoth !== false;
+
   let minLoggedDays = Number(rules.minLoggedDays);
-  if (!Number.isFinite(minLoggedDays) || minLoggedDays < 0) minLoggedDays = 1;
-  if (minLoggedDays > 7) minLoggedDays = 7;
 
-  return { windowDays, requireBoth, minLoggedDays };
-}
+  if (!Number.isFinite(minLoggedDays) || minLoggedDays < 0) {
+    minLoggedDays = 1;
+  }
 
-function dateNDaysAgo(n) {
-  const d = new Date();
-  d.setHours(12, 0, 0, 0);
-  d.setDate(d.getDate() - (n - 1));
-  return d.toISOString().split('T')[0];
-}
+  if (minLoggedDays > 7) {
+    minLoggedDays = 7;
+  }
 
-function todayStr() {
-  return new Date().toISOString().split('T')[0];
+  return {
+    windowDays,
+    requireBoth,
+    minLoggedDays
+  };
 }
 
 function isSuccessDay(entry, pair, requireBoth) {
-  const bAvoided = badAvoided(entry, pair.badHabit, pair.isCustomBad);
-  const gDone = goodDone(entry, pair.goodHabit, pair.isCustomGood);
+  const bAvoided = badAvoided(
+    entry,
+    pair.badHabit,
+    pair.isCustomBad
+  );
 
-  if (bAvoided === null && gDone === null) return { status: 'skip', logged: false };
+  const gDone = goodDone(
+    entry,
+    pair.goodHabit,
+    pair.isCustomGood
+  );
+
+  if (bAvoided === null && gDone === null) {
+    return {
+      status: 'skip',
+      logged: false
+    };
+  }
 
   if (requireBoth) {
     if (bAvoided === null || gDone === null) {
-      return { status: 'skip', logged: bAvoided !== null || gDone !== null };
+      return {
+        status: 'skip',
+        logged: bAvoided !== null || gDone !== null
+      };
     }
-    if (bAvoided && gDone) return { status: 'success', logged: true };
-    if (bAvoided && !gDone) return { status: 'partial', logged: true };
-    return { status: 'failed', logged: true };
+
+    if (bAvoided && gDone) {
+      return {
+        status: 'success',
+        logged: true
+      };
+    }
+
+    if (bAvoided && !gDone) {
+      return {
+        status: 'partial',
+        logged: true
+      };
+    }
+
+    return {
+      status: 'failed',
+      logged: true
+    };
   }
 
-  // good-only mode still tracks bad when present
-  if (gDone === true) return { status: 'success', logged: true };
-  if (gDone === false) return { status: 'failed', logged: true };
-  return { status: 'skip', logged: false };
+  // Good-only mode still tracks the good habit when present.
+  if (gDone === true) {
+    return {
+      status: 'success',
+      logged: true
+    };
+  }
+
+  if (gDone === false) {
+    return {
+      status: 'failed',
+      logged: true
+    };
+  }
+
+  return {
+    status: 'skip',
+    logged: false
+  };
 }
 
-const calcStats = (pair, allEntries) => {
-  const rules = normalizeRules(pair.rules);
-  const { windowDays, requireBoth, minLoggedDays } = rules;
-
-  const toStr = todayStr();
-
-  // Progress evaluation starts on the day the pair was created
-  let pairStart = toStr;
-  if (pair.createdAt) {
-    pairStart = new Date(pair.createdAt).toISOString().split('T')[0];
+function getPairStartDate(pair, timeZone, today) {
+  if (!pair.createdAt) {
+    return today;
   }
 
-  const windowStart = dateNDaysAgo(windowDays);
-  // Only score days on/after pair creation, still inside the rolling window
-  const fromStr = pairStart > windowStart ? pairStart : windowStart;
+  const createdAt = new Date(pair.createdAt);
+
+  if (Number.isNaN(createdAt.getTime())) {
+    return today;
+  }
+
+  return getDateStringInTimeZone(timeZone, createdAt);
+}
+
+const calcStats = (pair, allEntries, timeZone) => {
+  const rules = normalizeRules(pair.rules);
+
+  const {
+    windowDays,
+    requireBoth,
+    minLoggedDays
+  } = rules;
+
+  const today = getTodayInTimeZone(timeZone);
+
+  // Evaluate pair progress from its creation date in the user's timezone.
+  const pairCreatedDate = getPairStartDate(
+    pair,
+    timeZone,
+    today
+  );
+
+  // Never evaluate a pair beyond today's local calendar date.
+  const windowStart = addDaysToDateString(
+    today,
+    -(windowDays - 1)
+  );
+
+  const fromStr = pairCreatedDate > windowStart
+    ? pairCreatedDate
+    : windowStart;
 
   const windowEntries = allEntries.filter(
-    (e) => e.date >= fromStr && e.date <= toStr
+    (entry) =>
+      typeof entry.date === 'string' &&
+      entry.date >= fromStr &&
+      entry.date <= today
   );
-  const byDate = Object.fromEntries(windowEntries.map((e) => [e.date, e]));
 
-  // Calendar days: today → back, stop before pair start (newest first for dots/streak)
+  const byDate = Object.create(null);
+
+  for (const entry of windowEntries) {
+    byDate[entry.date] = entry;
+  }
+
+  // Generate calendar dates using date-only arithmetic.
+  // This is independent of server timezone and DST.
   const calendarDays = [];
-  const cursor = new Date(toStr + 'T12:00:00');
-  for (let i = 0; i < windowDays; i++) {
-    const ds = cursor.toISOString().split('T')[0];
-    if (ds < fromStr) break;
-    calendarDays.push(ds);
-    cursor.setDate(cursor.getDate() - 1);
+
+  for (let offset = 0; offset < windowDays; offset += 1) {
+    const date = addDaysToDateString(today, -offset);
+
+    if (date < fromStr) {
+      break;
+    }
+
+    calendarDays.push(date);
   }
 
   let successful = 0;
   let avoided = 0;
   let logged = 0;
+
   const dayStatuses = [];
 
-  for (const ds of calendarDays) {
-    const e = byDate[ds];
-    if (!e) {
-      // No log after pair exists → missed (red in UI)
+  for (const date of calendarDays) {
+    const entry = byDate[date];
+
+    if (!entry) {
+      // Preserve existing product behaviour:
+      // a missing log after pair creation is considered missed.
       dayStatuses.push('missed');
       continue;
     }
 
-    const { status, logged: isLogged } = isSuccessDay(e, pair, requireBoth);
+    const {
+      status,
+      logged: isLogged
+    } = isSuccessDay(entry, pair, requireBoth);
 
     if (status === 'success') {
       dayStatuses.push('success');
-      successful++;
+      successful += 1;
     } else if (status === 'partial') {
       dayStatuses.push('partial');
     } else if (status === 'failed') {
       dayStatuses.push('failed');
     } else {
-      // skip / incomplete log for this pair → treat as missed
       dayStatuses.push('missed');
     }
 
-    if (isLogged) logged++;
+    if (isLogged) {
+      logged += 1;
+    }
 
     if (requireBoth) {
-      const b = badAvoided(e, pair.badHabit, pair.isCustomBad);
-      if (b === true) avoided++;
+      const avoidedBadHabit = badAvoided(
+        entry,
+        pair.badHabit,
+        pair.isCustomBad
+      );
+
+      if (avoidedBadHabit === true) {
+        avoided += 1;
+      }
     }
   }
 
-  // Streak: consecutive successes from today backwards
+  // Preserve the existing streak rule:
+  // count consecutive successful days from today backwards.
   let streak = 0;
+
   for (const status of dayStatuses) {
-    if (status === 'success') streak++;
-    else break;
+    if (status !== 'success') {
+      break;
+    }
+
+    streak += 1;
   }
 
-  // Challenge progress: always ÷ full window (e.g. 1/7 ≈ 14%), not ÷ days since start
-  const denom = windowDays;
-  const successRate = Math.round((successful / denom) * 100);
+  // Preserve the existing full-window denominator.
+  const successRate = Math.round(
+    (successful / windowDays) * 100
+  );
 
   return {
     windowDays,
@@ -158,30 +285,52 @@ const calcStats = (pair, allEntries) => {
     activeDays: calendarDays.length,
     pairStart: fromStr,
     successRate,
-    progressLabel: `${successful}/${denom} days in window`,
+    progressLabel: `${successful}/${windowDays} days in window`,
     insufficientData: false,
-    avoidanceRate: logged > 0 ? Math.round((avoided / logged) * 100) : 0,
+    avoidanceRate: logged > 0
+      ? Math.round((avoided / logged) * 100)
+      : 0,
     streak,
-    last7: dayStatuses.slice(0, Math.min(7, dayStatuses.length)),
+    last7: dayStatuses.slice(
+      0,
+      Math.min(7, dayStatuses.length)
+    ),
     lastN: dayStatuses
   };
 };
 
 class HabitReplacementService {
-  async getPairs(userId) {
-    const from = new Date();
-    from.setDate(from.getDate() - 90);
-    const fromStr = from.toISOString().split('T')[0];
+  async getPairs(userId, timeZone) {
+    const normalizedTimeZone = normalizeTimeZone(timeZone);
+
+    const today = getTodayInTimeZone(normalizedTimeZone);
+
+    // Keep the existing 90-day historical fetch window.
+    // Add an upper boundary to exclude future-dated entries.
+    const fromDate = addDaysToDateString(today, -90);
 
     const [pairs, entries] = await Promise.all([
-      HabitReplacement.find({ userId }).sort({ createdAt: 1 }).lean(),
-      Entry.find({ userId, date: { $gte: fromStr } }).lean()
+      HabitReplacement.find({ userId })
+        .sort({ createdAt: 1 })
+        .lean(),
+
+      Entry.find({
+        userId,
+        date: {
+          $gte: fromDate,
+          $lte: today
+        }
+      }).lean()
     ]);
 
-    return pairs.map((p) => ({
-      ...p,
-      rules: normalizeRules(p.rules),
-      stats: calcStats(p, entries)
+    return pairs.map((pair) => ({
+      ...pair,
+      rules: normalizeRules(pair.rules),
+      stats: calcStats(
+        pair,
+        entries,
+        normalizedTimeZone
+      )
     }));
   }
 
@@ -198,16 +347,32 @@ class HabitReplacementService {
       rules
     } = data;
 
-    if (!badHabit || !goodHabit || !badHabitLabel || !goodHabitLabel) {
-      throw new AppError('Both habits are required.', 400);
+    if (
+      !badHabit ||
+      !goodHabit ||
+      !badHabitLabel ||
+      !goodHabitLabel
+    ) {
+      throw new AppError(
+        'Both habits are required.',
+        400
+      );
     }
+
     if (badHabit === goodHabit) {
-      throw new AppError('Bad and good habit cannot be the same.', 400);
+      throw new AppError(
+        'Bad and good habit cannot be the same.',
+        400
+      );
     }
 
     const count = await HabitReplacement.countForUser(userId);
+
     if (count >= MAX_PAIRS) {
-      throw new AppError(`Maximum ${MAX_PAIRS} replacement pairs allowed.`, 400);
+      throw new AppError(
+        `Maximum ${MAX_PAIRS} replacement pairs allowed.`,
+        400
+      );
     }
 
     const pair = await HabitReplacement.create({
@@ -227,19 +392,40 @@ class HabitReplacementService {
   }
 
   async updatePairRules(userId, pairId, rules) {
-    const pair = await HabitReplacement.findOne({ _id: pairId, userId });
-    if (!pair) throw new AppError('Pair not found.', 404);
+    const pair = await HabitReplacement.findOne({
+      _id: pairId,
+      userId
+    });
 
-    pair.rules = normalizeRules({ ...pair.rules?.toObject?.() || pair.rules, ...rules });
+    if (!pair) {
+      throw new AppError('Pair not found.', 404);
+    }
+
+    pair.rules = normalizeRules({
+      ...pair.rules?.toObject?.() || pair.rules,
+      ...rules
+    });
+
     await pair.save();
+
     return pair.toObject();
   }
 
   async deletePair(userId, pairId) {
-    const pair = await HabitReplacement.findOne({ _id: pairId, userId });
-    if (!pair) throw new AppError('Pair not found.', 404);
+    const pair = await HabitReplacement.findOne({
+      _id: pairId,
+      userId
+    });
+
+    if (!pair) {
+      throw new AppError('Pair not found.', 404);
+    }
+
     await pair.deleteOne();
-    return { message: 'Replacement pair removed.' };
+
+    return {
+      message: 'Replacement pair removed.'
+    };
   }
 }
 

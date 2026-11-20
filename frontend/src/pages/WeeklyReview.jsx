@@ -1,3 +1,4 @@
+
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -6,6 +7,22 @@ import {
   fetchWeeklyReview,
   saveWeeklyReview
 } from '../api/weeklyReviewAPI';
+
+const DATE_FORMAT_OPTIONS = {
+  month: 'short',
+  day: 'numeric',
+  timeZone: 'UTC'
+};
+
+const DATE_RANGE_END_OPTIONS = {
+  ...DATE_FORMAT_OPTIONS,
+  year: 'numeric'
+};
+
+const WEEKDAY_FORMAT_OPTIONS = {
+  weekday: 'narrow',
+  timeZone: 'UTC'
+};
 
 function addDays(dateStr, n) {
   const d = new Date(`${dateStr}T12:00:00.000Z`);
@@ -20,6 +37,7 @@ function isoWeekParts(weekStart) {
   d.setUTCDate(d.getUTCDate() + 4 - day);
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
   const weekNo = Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
+
   return {
     year: d.getUTCFullYear(),
     week: weekNo
@@ -29,11 +47,11 @@ function isoWeekParts(weekStart) {
 function formatRange(start, end) {
   const a = new Date(`${start}T12:00:00.000Z`);
   const b = new Date(`${end}T12:00:00.000Z`);
-  const opts = { month: 'short', day: 'numeric' };
-  return `${a.toLocaleDateString('en-PK', opts)} – ${b.toLocaleDateString(
+
+  return `${a.toLocaleDateString(
     'en-PK',
-    { ...opts, year: 'numeric' }
-  )}`;
+    DATE_FORMAT_OPTIONS
+  )} – ${b.toLocaleDateString('en-PK', DATE_RANGE_END_OPTIONS)}`;
 }
 
 const PROMPTS = [
@@ -77,13 +95,17 @@ export default function WeeklyReview() {
   const load = useCallback(async (ws) => {
     setLoading(true);
     setError('');
+
     try {
       const res = await fetchWeeklyReview(ws || undefined);
       const data = res.data?.data ?? res.data;
+
       setWeekStart(data.weekStart);
       setWeekEnd(data.weekEnd);
       setOverview(data.overview);
+
       const r = data.reflection || {};
+
       setForm({
         wentWell: r.wentWell || '',
         challenges: r.challenges || '',
@@ -110,7 +132,9 @@ export default function WeeklyReview() {
   };
 
   const fieldsComplete = useMemo(() => {
-    return PROMPTS.every(({ key }) => String(form[key] || '').trim().length > 0);
+    return PROMPTS.every(
+      ({ key }) => String(form[key] || '').trim().length > 0
+    );
   }, [form]);
 
   const weekMeta = useMemo(() => {
@@ -127,6 +151,7 @@ export default function WeeklyReview() {
     }
 
     setSaving(true);
+
     try {
       const res = await saveWeeklyReview(weekStart, {
         wentWell: form.wentWell,
@@ -135,13 +160,17 @@ export default function WeeklyReview() {
         priority: form.priority,
         status: nextStatus
       });
+
       const data = res.data?.data ?? res.data;
       const r = data.reflection || {};
+
       setForm((f) => ({
         ...f,
         status: r.status || nextStatus
       }));
+
       setOverview(data.overview);
+
       toast.success(
         nextStatus === 'completed' ? 'Review completed' : 'Draft saved'
       );
@@ -195,7 +224,6 @@ export default function WeeklyReview() {
               Reflect on your week
             </h1>
 
-            {/* Clear year + week label */}
             {weekStart && weekEnd && weekMeta && (
               <div className="mt-2 space-y-1">
                 <p className="text-sm font-semibold text-[var(--color-text)]">
@@ -220,6 +248,7 @@ export default function WeeklyReview() {
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
+
             <button
               type="button"
               onClick={() => load(null)}
@@ -227,6 +256,7 @@ export default function WeeklyReview() {
             >
               This week
             </button>
+
             <button
               type="button"
               onClick={() => shiftWeek(1)}
@@ -253,6 +283,7 @@ export default function WeeklyReview() {
         <p className="mt-1 text-xs text-[var(--color-text-muted)]">
           From your habit logs — not a separate score engine
         </p>
+
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
             <p className="text-[11px] text-[var(--color-text-muted)]">Days logged</p>
@@ -263,18 +294,21 @@ export default function WeeklyReview() {
               </span>
             </p>
           </div>
+
           <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
             <p className="text-[11px] text-[var(--color-text-muted)]">Consistency</p>
             <p className="mt-1 font-display text-2xl font-semibold text-[var(--color-text)]">
               {o.consistencyPct ?? 0}%
             </p>
           </div>
+
           <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
             <p className="text-[11px] text-[var(--color-text-muted)]">Avg score</p>
             <p className="mt-1 font-display text-2xl font-semibold text-[var(--color-text)]">
               {o.avgScore ?? '—'}
             </p>
           </div>
+
           <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
             <p className="text-[11px] text-[var(--color-text-muted)]">
               Good habits done
@@ -284,6 +318,7 @@ export default function WeeklyReview() {
             </p>
           </div>
         </div>
+
         <p className="mt-3 text-xs text-[var(--color-text-secondary)]">
           Hard moments marked: {o.badMarked ?? 0}
           {o.goodCompletionPct != null
@@ -293,6 +328,7 @@ export default function WeeklyReview() {
             ? ` · vs last week: score ${comparison.avgScoreDelta >= 0 ? '+' : ''}${comparison.avgScoreDelta}, days ${comparison.daysLoggedDelta >= 0 ? '+' : ''}${comparison.daysLoggedDelta}`
             : ''}
         </p>
+
         {o.daily?.length > 0 && (
           <div className="mt-4 grid grid-cols-7 gap-1.5">
             {o.daily.map((day) => (
@@ -307,7 +343,7 @@ export default function WeeklyReview() {
                 <p className="text-[9px] uppercase text-[var(--color-text-muted)]">
                   {new Date(`${day.date}T12:00:00.000Z`).toLocaleDateString(
                     'en',
-                    { weekday: 'narrow' }
+                    WEEKDAY_FORMAT_OPTIONS
                   )}
                 </p>
                 <p className="mt-1 text-xs font-semibold text-[var(--color-text)]">
@@ -337,6 +373,7 @@ export default function WeeklyReview() {
                 {label}
                 <span className="text-[var(--color-danger)]"> *</span>
               </label>
+
               <textarea
                 id={`review-${key}`}
                 rows={3}
@@ -367,6 +404,7 @@ export default function WeeklyReview() {
           >
             {saving ? 'Saving…' : 'Save draft'}
           </button>
+
           <button
             type="button"
             disabled={saving || !fieldsComplete}

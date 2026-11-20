@@ -1,53 +1,246 @@
+
+'use strict';
+
+const crypto = require('node:crypto');
+
 const User = require('../models/User');
 const Entry = require('../models/Entry');
+const ReminderDelivery = require('../models/ReminderDelivery');
+
 const { sendDailyReminderEmail } = require('./emailService');
 const pushService = require('./pushService');
 
+const {
+  addDaysToDateString,
+  getHourInTimeZone,
+  getTodayInTimeZone,
+  normalizeTimeZone
+} = require('../utils/dateUtils');
+
+const MAX_CHANNEL_ATTEMPTS = 3;
+const CLAIM_LEASE_MS = 10 * 60 * 1000;
+const ERROR_MESSAGE_MAX_LENGTH = 500;
+
 function clientBaseUrl() {
-  return (process.env.CLIENT_URL || 'http://localhost:5173').replace(/\/$/, '');
+  return (
+    process.env.CLIENT_URL || 'http://localhost:5173'
+  ).replace(/\/+$/, '');
 }
 
-/** YYYY-MM-DD in a given IANA timezone */
 function dateInTimezone(timeZone = 'Asia/Karachi') {
-  try {
-    return new Intl.DateTimeFormat('en-CA', {
-      timeZone,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    }).format(new Date());
-  } catch {
-    return new Date().toISOString().split('T')[0];
-  }
+  return getTodayInTimeZone(normalizeTimeZone(timeZone));
 }
 
 function hourInTimezone(timeZone = 'Asia/Karachi') {
+  return getHourInTimeZone(normalizeTimeZone(timeZone));
+}
+
+function safeErrorMessage(error, fallback) {
+  const message =
+    typeof error?.message === 'string' && error.message.trim()
+      ? error.message.trim()
+      : fallback;
+
+  return message.slice(0, ERROR_MESSAGE_MAX_LENGTH);
+}
+
+function isDuplicateKeyError(error) {
+  return error?.code === 11000;
+}
+
+function isRetryableRejectedError(error) {
+  return (
+    error?.deliveryOutcome === 'rejected' &&
+    error?.retryable === true
+  );
+}
+
+async function ensureDeliveryRecord({
+  userId,
+  localDate,
+  timeZone,
+  preferredHour
+}) {
   try {
-    const parts = new Intl.DateTimeFormat('en-GB', {
-      timeZone,
-      hour: 'numeric',
-      hour12: false
-    }).formatToParts(new Date());
-    const h = parts.find((p) => p.type === 'hour')?.value;
-    return Number(h);
-  } catch {
-    return new Date().getUTCHours();
+    await ReminderDelivery.updateOne(
+      { userId, localDate },
+      {
+        $setOnInsert: {
+          userId,
+          localDate,
+          timezone: timeZone,
+          preferredHour,
+          email: {
+            status: 'pending',
+            attempts: 0,
+            retryable: false
+          },
+          push: {
+            status: 'pending',
+            attempts: 0,
+            retryable: false
+          }
+        }
+      },
+      { upsert: true }
+    );
+  } catch (error) {
+    if (!isDuplicateKeyError(error)) {
+      throw error;
+    }
   }
 }
 
-function addDaysToDateStr(dateStr, delta) {
-  const d = new Date(`${dateStr}T12:00:00.000Z`);
-  d.setUTCDate(d.getUTCDate() + delta);
-  return d.toISOString().split('T')[0];
+/**
+ * An expired sending lease is ambiguous:
+ * the provider may have accepted the request before the worker stopped.
+ * Quarantine it instead of automatically sending again.
+ */
+async function quarantineExpiredClaim({
+  userId,
+  localDate,
+  channel,
+  now
+}) {
+  const statusPath = `${channel}.status`;
+  const leasePath = `${channel}.leaseUntil`;
+  const claimIdPath = `${channel}.claimId`;
+  const retryablePath = `${channel}.retryable`;
+  const lastErrorPath = `${channel}.lastError`;
+
+  const update = await ReminderDelivery.updateOne(
+    {
+      userId,
+      localDate,
+      [statusPath]: 'sending',
+      [leasePath]: { $lte: now }
+    },
+    {
+      $set: {
+        [statusPath]: 'uncertain',
+        [claimIdPath]: null,
+        [leasePath]: null,
+        [retryablePath]: false,
+        [lastErrorPath]:
+          'Delivery lease expired; provider outcome requires reconciliation.'
+      }
+    }
+  );
+
+  return (update.modifiedCount || 0) > 0;
+}
+
+async function claimChannel({
+  userId,
+  localDate,
+  channel,
+  now
+}) {
+  await quarantineExpiredClaim({
+    userId,
+    localDate,
+    channel,
+    now
+  });
+
+  const claimId = crypto.randomUUID();
+  const leaseUntil = new Date(now.getTime() + CLAIM_LEASE_MS);
+
+  const statusPath = `${channel}.status`;
+  const attemptsPath = `${channel}.attempts`;
+  const claimIdPath = `${channel}.claimId`;
+  const leasePath = `${channel}.leaseUntil`;
+  const lastAttemptPath = `${channel}.lastAttemptAt`;
+  const lastErrorPath = `${channel}.lastError`;
+  const retryablePath = `${channel}.retryable`;
+
+  const claim = await ReminderDelivery.findOneAndUpdate(
+    {
+      userId,
+      localDate,
+      [attemptsPath]: { $lt: MAX_CHANNEL_ATTEMPTS },
+      $or: [
+        {
+          [statusPath]: 'pending'
+        },
+        {
+          [statusPath]: 'failed',
+          [retryablePath]: true
+        }
+      ]
+    },
+    {
+      $set: {
+        [statusPath]: 'sending',
+        [claimIdPath]: claimId,
+        [leasePath]: leaseUntil,
+        [lastAttemptPath]: now,
+        [lastErrorPath]: null,
+        [retryablePath]: false
+      },
+      $inc: {
+        [attemptsPath]: 1
+      }
+    },
+    {
+      new: true,
+      runValidators: true
+    }
+  );
+
+  return claim ? { claimId } : null;
 }
 
 /**
- * Pick calm email/push variant from recent logging pattern.
- * Does not change streak math — display/copy only.
+ * Returns true only when this worker still owns the claim
+ * and the database accepted its state transition.
  */
+async function finishChannel({
+  userId,
+  localDate,
+  channel,
+  claimId,
+  status,
+  errorMessage = null,
+  retryable = false
+}) {
+  const statusPath = `${channel}.status`;
+  const claimIdPath = `${channel}.claimId`;
+  const leasePath = `${channel}.leaseUntil`;
+  const sentAtPath = `${channel}.sentAt`;
+  const lastErrorPath = `${channel}.lastError`;
+  const retryablePath = `${channel}.retryable`;
+
+  const update = {
+    $set: {
+      [statusPath]: status,
+      [claimIdPath]: null,
+      [leasePath]: null,
+      [lastErrorPath]: errorMessage,
+      [retryablePath]: status === 'failed' && retryable === true
+    }
+  };
+
+  if (status === 'sent') {
+    update.$set[sentAtPath] = new Date();
+  }
+
+  const result = await ReminderDelivery.updateOne(
+    {
+      userId,
+      localDate,
+      [claimIdPath]: claimId,
+      [statusPath]: 'sending'
+    },
+    update
+  );
+
+  return (result.modifiedCount || 0) > 0;
+}
+
 async function resolveReminderVariant(userId, localDate) {
-  const from = addDaysToDateStr(localDate, -7);
-  const yesterday = addDaysToDateStr(localDate, -1);
+  const from = addDaysToDateString(localDate, -7);
+  const yesterday = addDaysToDateString(localDate, -1);
 
   const recent = await Entry.find({
     userId,
@@ -60,12 +253,12 @@ async function resolveReminderVariant(userId, localDate) {
     return 'gentle';
   }
 
-  const dates = new Set(recent.map((e) => e.date));
+  const dates = new Set(recent.map((entry) => entry.date));
+
   if (dates.has(yesterday)) {
     return 'protect';
   }
 
-  // Has history in the window but not yesterday → soft comeback
   return 'comeback';
 }
 
@@ -88,7 +281,9 @@ function pushPayload(variant, logUrl) {
       body: 'Whenever you are ready — one minute is enough.'
     }
   };
+
   const { title, body } = map[variant] || map.default;
+
   return {
     title,
     body,
@@ -97,33 +292,318 @@ function pushPayload(variant, logUrl) {
   };
 }
 
-/**
- * Remind opted-in users who have not logged "today" in their timezone.
- */
+function addDeliveryError(result, details) {
+  result.errors.push(details);
+}
+
+async function deliverEmail({
+  user,
+  localDate,
+  logUrl,
+  variant,
+  now,
+  result
+}) {
+  const claim = await claimChannel({
+    userId: user._id,
+    localDate,
+    channel: 'email',
+    now
+  });
+
+  if (!claim) {
+    result.emailNotClaimed++;
+    return;
+  }
+
+  const idempotencyKey =
+    `daily-reminder:${user._id}:${localDate}:email`;
+
+  try {
+    const delivery = await sendDailyReminderEmail({
+      to: user.email,
+      name: user.name,
+      logUrl,
+      variant,
+      idempotencyKey
+    });
+
+    if (delivery?.queued !== true) {
+      const reason =
+        typeof delivery?.reason === 'string'
+          ? delivery.reason
+          : 'email_not_queued';
+
+      const message = safeErrorMessage(
+        { message: reason },
+        'email_not_queued'
+      );
+
+      const retryable = reason === 'email_not_configured';
+
+      const finished = await finishChannel({
+        userId: user._id,
+        localDate,
+        channel: 'email',
+        claimId: claim.claimId,
+        status: 'failed',
+        errorMessage: message,
+        retryable
+      });
+
+      if (!finished) {
+        addDeliveryError(result, {
+          channel: 'email',
+          message: 'email_claim_lost_before_failure_recording'
+        });
+        return;
+      }
+
+      result.failed++;
+      addDeliveryError(result, {
+        channel: 'email',
+        message
+      });
+      return;
+    }
+
+    const finished = await finishChannel({
+      userId: user._id,
+      localDate,
+      channel: 'email',
+      claimId: claim.claimId,
+      status: 'sent'
+    });
+
+    if (!finished) {
+      addDeliveryError(result, {
+        channel: 'email',
+        message: 'email_claim_lost_after_provider_acceptance'
+      });
+      return;
+    }
+
+    result.sent++;
+  } catch (error) {
+    const message = safeErrorMessage(
+      error,
+      'email_delivery_failed'
+    );
+
+    const retryable = isRetryableRejectedError(error);
+    const status =
+      error?.deliveryOutcome === 'rejected'
+        ? 'failed'
+        : 'uncertain';
+
+    const finished = await finishChannel({
+      userId: user._id,
+      localDate,
+      channel: 'email',
+      claimId: claim.claimId,
+      status,
+      errorMessage: message,
+      retryable
+    });
+
+    if (!finished) {
+      addDeliveryError(result, {
+        channel: 'email',
+        message: 'email_claim_lost_while_recording_error'
+      });
+      return;
+    }
+
+    result.failed++;
+    addDeliveryError(result, {
+      channel: 'email',
+      message,
+      deliveryOutcome: status,
+      retryable
+    });
+  }
+}
+
+async function deliverPush({
+  user,
+  localDate,
+  logUrl,
+  variant,
+  now,
+  result
+}) {
+  const claim = await claimChannel({
+    userId: user._id,
+    localDate,
+    channel: 'push',
+    now
+  });
+
+  if (!claim) {
+    result.pushNotClaimed++;
+    return;
+  }
+
+  result.pushAttempted++;
+
+  try {
+    const delivery = await pushService.sendToUser(
+      user._id,
+      pushPayload(variant, logUrl)
+    );
+
+    if (delivery?.sent) {
+      const finished = await finishChannel({
+        userId: user._id,
+        localDate,
+        channel: 'push',
+        claimId: claim.claimId,
+        status: 'sent'
+      });
+
+      if (finished) {
+        result.pushSent++;
+      } else {
+        addDeliveryError(result, {
+          channel: 'push',
+          message: 'push_claim_lost_after_provider_acceptance'
+        });
+      }
+
+      return;
+    }
+
+    if (delivery?.reason === 'no_subscription') {
+      const finished = await finishChannel({
+        userId: user._id,
+        localDate,
+        channel: 'push',
+        claimId: claim.claimId,
+        status: 'skipped',
+        errorMessage: 'no_subscription'
+      });
+
+      if (finished) {
+        result.pushNoSubscription++;
+      }
+
+      return;
+    }
+
+    const message = safeErrorMessage(
+      { message: delivery?.reason },
+      'push_delivery_failed'
+    );
+
+    const finished = await finishChannel({
+      userId: user._id,
+      localDate,
+      channel: 'push',
+      claimId: claim.claimId,
+      status: 'failed',
+      errorMessage: message,
+      retryable: true
+    });
+
+    if (!finished) {
+      addDeliveryError(result, {
+        channel: 'push',
+        message: 'push_claim_lost_while_recording_failure'
+      });
+      return;
+    }
+
+    result.pushFailed++;
+    addDeliveryError(result, {
+      channel: 'push',
+      message,
+      statusCode: delivery?.statusCode ?? null
+    });
+  } catch (error) {
+    const message = safeErrorMessage(
+      error,
+      'push_service_error'
+    );
+
+    const finished = await finishChannel({
+      userId: user._id,
+      localDate,
+      channel: 'push',
+      claimId: claim.claimId,
+      status: 'uncertain',
+      errorMessage: message
+    });
+
+    if (!finished) {
+      addDeliveryError(result, {
+        channel: 'push',
+        message: 'push_claim_lost_while_recording_error'
+      });
+      return;
+    }
+
+    result.pushFailed++;
+    addDeliveryError(result, {
+      channel: 'push',
+      message,
+      deliveryOutcome: 'uncertain'
+    });
+  }
+}
+
 async function runDailyReminders({ strictHour = false } = {}) {
   const users = await User.find({
     emailVerified: true,
     'preferences.dailyReminderEnabled': true
   })
-    .select('name email timezone preferences pushSubscription')
+    .select('name email timezone preferences')
     .lean();
 
-  // pushSubscription may be select:false on schema — re-fetch with + if needed
   const logUrl = `${clientBaseUrl()}/log`;
-  let sent = 0;
-  let pushSent = 0;
-  let skipped = 0;
-  let failed = 0;
-  const errors = [];
+
+  const result = {
+    candidates: users.length,
+    sent: 0,
+    emailNotClaimed: 0,
+    pushAttempted: 0,
+    pushSent: 0,
+    pushFailed: 0,
+    pushNoSubscription: 0,
+    pushNotClaimed: 0,
+    skipped: 0,
+    skippedWrongHour: 0,
+    skippedAlreadyLogged: 0,
+    skippedInvalidHour: 0,
+    failed: 0,
+    variantFallbacks: 0,
+    errors: []
+  };
 
   for (const user of users) {
-    const tz = user.timezone || 'Asia/Karachi';
-    const localDate = dateInTimezone(tz);
-    const localHour = hourInTimezone(tz);
-    const preferredHour = Number(user.preferences?.dailyReminderHour ?? 20);
+    const timeZone = normalizeTimeZone(
+      user.timezone || 'Asia/Karachi'
+    );
+
+    const localDate = getTodayInTimeZone(timeZone);
+    const localHour = getHourInTimeZone(timeZone);
+
+    const preferredHour = Number(
+      user.preferences?.dailyReminderHour ?? 20
+    );
+
+    if (
+      !Number.isInteger(preferredHour) ||
+      preferredHour < 0 ||
+      preferredHour > 23
+    ) {
+      result.skipped++;
+      result.skippedInvalidHour++;
+      continue;
+    }
 
     if (strictHour && localHour !== preferredHour) {
-      skipped++;
+      result.skipped++;
+      result.skippedWrongHour++;
       continue;
     }
 
@@ -133,50 +613,56 @@ async function runDailyReminders({ strictHour = false } = {}) {
     });
 
     if (hasEntry) {
-      skipped++;
+      result.skipped++;
+      result.skippedAlreadyLogged++;
       continue;
     }
 
+    await ensureDeliveryRecord({
+      userId: user._id,
+      localDate,
+      timeZone,
+      preferredHour
+    });
+
     let variant = 'default';
-    try {
-      variant = await resolveReminderVariant(user._id, localDate);
-    } catch {
-      variant = 'default';
-    }
 
     try {
-      await sendDailyReminderEmail({
-        to: user.email,
-        name: user.name,
-        logUrl,
-        variant
-      });
-      sent++;
-    } catch (err) {
-      failed++;
-      errors.push({ email: user.email, channel: 'email', message: err.message });
-    }
-
-    // Best-effort push (same moment, same variant). Ignore if not configured / no sub.
-    try {
-      const result = await pushService.sendToUser(
+      variant = await resolveReminderVariant(
         user._id,
-        pushPayload(variant, logUrl)
+        localDate
       );
-      if (result?.sent) pushSent++;
     } catch {
-      // push optional — do not fail the whole job
+      result.variantFallbacks++;
     }
+
+    const now = new Date();
+
+    await deliverEmail({
+      user,
+      localDate,
+      logUrl,
+      variant,
+      now,
+      result
+    });
+
+    await deliverPush({
+      user,
+      localDate,
+      logUrl,
+      variant,
+      now,
+      result
+    });
   }
 
-  return {
-    candidates: users.length,
-    sent,
-    pushSent,
-    skipped,
-    failed,
-    errors: errors.slice(0, 10)
-  };
+  result.errors = result.errors.slice(0, 10);
+  return result;
 }
 
-module.exports = { runDailyReminders, dateInTimezone };
+module.exports = {
+  runDailyReminders,
+  dateInTimezone,
+  hourInTimezone
+};

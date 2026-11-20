@@ -13,7 +13,12 @@ import {
   Sparkles
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { fetchProfile, updateProfile, changePassword, deleteAccount } from '../api/userAPI';
+import {
+  fetchProfile,
+  updateProfile,
+  changePassword,
+  deleteAccount
+} from '../api/userAPI';
 import Avatar from '../components/Avatar';
 import { AVATAR_PRESETS } from '../config/avatarPresets';
 import PasswordStrength from '../components/PasswordStrength';
@@ -26,6 +31,27 @@ const GRADE_COLORS = {
   D: '#f97316',
   F: '#ef4444'
 };
+
+/**
+ * Formats a date-only YYYY-MM-DD value without browser timezone shifts.
+ * Date-only values are calendar dates, not timestamps.
+ */
+function formatCalendarDate(dateString, options = {}) {
+  if (typeof dateString !== 'string' || !dateString.trim()) {
+    return '';
+  }
+
+  const date = new Date(`${dateString}T12:00:00.000Z`);
+
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  return date.toLocaleDateString('en-PK', {
+    ...options,
+    timeZone: 'UTC'
+  });
+}
 
 export default function Profile() {
   const { logout, updateUser } = useAuth();
@@ -58,37 +84,53 @@ export default function Profile() {
     const load = async () => {
       try {
         const res = await fetchProfile();
+
         setProfile(res.data.user);
         setStats(res.data.stats);
-        setEditForm({ name: res.data.user.name, email: res.data.user.email });
+        setEditForm({
+          name: res.data.user.name,
+          email: res.data.user.email
+        });
       } catch {
         toast.error('Could not load profile.');
       } finally {
         setLoading(false);
       }
     };
+
     load();
   }, []);
 
   const syncUser = (userPayload) => {
     setProfile((p) => ({ ...p, ...userPayload }));
-    if (updateUser) updateUser(userPayload);
+
+    if (updateUser) {
+      updateUser(userPayload);
+    }
   };
 
   const handleAvatarSelect = async (avatarId) => {
     try {
       const res = await updateProfile({ avatar: avatarId });
       syncUser(res.data.user);
+
       toast.success(avatarId ? 'Avatar updated' : 'Avatar cleared');
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Could not update avatar');
+      toast.error(
+        err?.response?.data?.message || 'Could not update avatar'
+      );
     }
   };
 
   const handleEditSave = async (e) => {
     e.preventDefault();
-    if (!editForm.name.trim()) return toast.error('Name cannot be empty.');
+
+    if (!editForm.name.trim()) {
+      return toast.error('Name cannot be empty.');
+    }
+
     setEditSaving(true);
+
     try {
       const res = await updateProfile(editForm);
       syncUser(res.data.user);
@@ -102,33 +144,51 @@ export default function Profile() {
 
   const handlePassSave = async (e) => {
     e.preventDefault();
+
     if (passForm.newPassword !== passForm.confirmPassword) {
       return toast.error('New passwords do not match.');
     }
+
     const policy = validatePassword(passForm.newPassword);
+
     if (!policy.ok) {
       return toast.error(policy.message);
     }
+
     setPassSaving(true);
+
     try {
       await changePassword({
         currentPassword: passForm.currentPassword,
         newPassword: passForm.newPassword
       });
+
       toast.success('Password changed successfully!');
-      setPassForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+
+      setPassForm({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Password change failed.');
+      toast.error(
+        err?.response?.data?.message || 'Password change failed.'
+      );
     } finally {
       setPassSaving(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!deletePass) return toast.error('Enter your password to confirm.');
+    if (!deletePass) {
+      return toast.error('Enter your password to confirm.');
+    }
+
     setDeleteLoading(true);
+
     try {
       await deleteAccount({ password: deletePass });
+
       toast.success('Account deleted. Goodbye!');
       logout();
       navigate('/');
@@ -139,8 +199,11 @@ export default function Profile() {
     }
   };
 
-  if (loading) return <div className="page-loader">Loading profile…</div>;
+  if (loading) {
+    return <div className="page-loader">Loading profile…</div>;
+  }
 
+  // createdAt is a timestamp, so retain normal timestamp formatting.
   const joinedDate = profile?.createdAt
     ? new Date(profile.createdAt).toLocaleDateString('en-PK', {
         year: 'numeric',
@@ -151,6 +214,16 @@ export default function Profile() {
 
   const initials = profile?.name?.charAt(0)?.toUpperCase() || 'U';
 
+  // bestDay is preferred; bestDate is retained as a fallback.
+  const bestScoreDate = stats?.bestDay || stats?.bestDate;
+
+  const bestScoreDateLabel = bestScoreDate
+    ? formatCalendarDate(bestScoreDate, {
+        month: 'short',
+        day: 'numeric'
+      })
+    : '';
+
   const inputClass =
     'w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] px-3.5 py-2.5 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-brand-500)] focus:ring-2 focus:ring-[var(--color-brand-500)]/20';
 
@@ -160,7 +233,9 @@ export default function Profile() {
       <div>
         <div className="mb-1 inline-flex items-center gap-2 text-[var(--color-brand-400)]">
           <User className="h-4 w-4" />
-          <span className="text-xs font-semibold uppercase tracking-wider">Profile</span>
+          <span className="text-xs font-semibold uppercase tracking-wider">
+            Profile
+          </span>
         </div>
 
         <h1 className="font-display text-2xl font-semibold tracking-tight text-[var(--color-text)] sm:text-3xl">
@@ -177,7 +252,11 @@ export default function Profile() {
         <div className="p-5 sm:p-6">
           <div className="flex flex-wrap items-start gap-4">
             <div className="rounded-full border-2 border-[var(--color-brand-500)]/30 p-1">
-              <Avatar avatar={profile?.avatar} name={profile?.name} size={64} />
+              <Avatar
+                avatar={profile?.avatar}
+                name={profile?.name}
+                size={64}
+              />
             </div>
 
             <div className="min-w-0 flex-1">
@@ -255,23 +334,25 @@ export default function Profile() {
 
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             {[
-              { label: 'Total Entries', value: stats.totalEntries, sub: 'days logged' },
-              { label: 'Average Score', value: stats.avgScore, sub: 'out of 100' },
-              { label: 'Current Streak', value: stats.overallStreak, sub: 'consecutive days' },
+              {
+                label: 'Total Entries',
+                value: stats.totalEntries,
+                sub: 'days logged'
+              },
+              {
+                label: 'Average Score',
+                value: stats.avgScore,
+                sub: 'out of 100'
+              },
+              {
+                label: 'Current Streak',
+                value: stats.overallStreak,
+                sub: 'consecutive days'
+              },
               {
                 label: 'Best Score',
                 value: stats.bestScore,
-                sub: stats.bestDate
-                  ? new Date(stats.bestDay + 'T12:00:00').toLocaleDateString('en-PK', {
-                      month: 'short',
-                      day: 'numeric'
-                    })
-                  : stats.bestDate
-                    ? new Date(stats.bestDate + 'T12:00:00').toLocaleDateString('en-PK', {
-                        month: 'short',
-                        day: 'numeric'
-                      })
-                    : ''
+                sub: bestScoreDateLabel
               }
             ].map((s) => (
               <div
@@ -295,33 +376,36 @@ export default function Profile() {
             ))}
           </div>
 
-          {stats.gradeCounts && Object.keys(stats.gradeCounts).length > 0 && (
-            <div className="mt-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
-              <p className="mb-3 text-sm font-medium text-[var(--color-text-secondary)]">
-                Grade Distribution
-              </p>
+          {stats.gradeCounts &&
+            Object.keys(stats.gradeCounts).length > 0 && (
+              <div className="mt-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+                <p className="mb-3 text-sm font-medium text-[var(--color-text-secondary)]">
+                  Grade Distribution
+                </p>
 
-              <div className="flex flex-wrap gap-2">
-                {['A', 'B', 'C', 'D', 'F'].map(
-                  (g) =>
-                    stats.gradeCounts[g] && (
-                      <span
-                        key={g}
-                        className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold"
-                        style={{
-                          color: GRADE_COLORS[g],
-                          borderColor: `${GRADE_COLORS[g]}55`,
-                          background: `${GRADE_COLORS[g]}18`
-                        }}
-                      >
-                        {g}
-                        <span className="opacity-80">× {stats.gradeCounts[g]}</span>
-                      </span>
-                    )
-                )}
+                <div className="flex flex-wrap gap-2">
+                  {['A', 'B', 'C', 'D', 'F'].map(
+                    (g) =>
+                      stats.gradeCounts[g] && (
+                        <span
+                          key={g}
+                          className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold"
+                          style={{
+                            color: GRADE_COLORS[g],
+                            borderColor: `${GRADE_COLORS[g]}55`,
+                            background: `${GRADE_COLORS[g]}18`
+                          }}
+                        >
+                          {g}
+                          <span className="opacity-80">
+                            × {stats.gradeCounts[g]}
+                          </span>
+                        </span>
+                      )
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
         </section>
       )}
 
@@ -355,7 +439,9 @@ export default function Profile() {
                 required
                 maxLength={60}
                 value={editForm.name}
-                onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))}
+                onChange={(e) =>
+                  setEditForm((p) => ({ ...p, name: e.target.value }))
+                }
                 className={inputClass}
               />
             </div>
@@ -374,7 +460,9 @@ export default function Profile() {
                 type="email"
                 required
                 value={editForm.email}
-                onChange={(e) => setEditForm((p) => ({ ...p, email: e.target.value }))}
+                onChange={(e) =>
+                  setEditForm((p) => ({ ...p, email: e.target.value }))
+                }
                 className={inputClass}
               />
             </div>
@@ -403,9 +491,21 @@ export default function Profile() {
 
           <form onSubmit={handlePassSave} className="space-y-4">
             {[
-              { key: 'currentPassword', label: 'Current Password', vis: 'current' },
-              { key: 'newPassword', label: 'New Password', vis: 'new' },
-              { key: 'confirmPassword', label: 'Confirm New Password', vis: 'confirm' }
+              {
+                key: 'currentPassword',
+                label: 'Current Password',
+                vis: 'current'
+              },
+              {
+                key: 'newPassword',
+                label: 'New Password',
+                vis: 'new'
+              },
+              {
+                key: 'confirmPassword',
+                label: 'Confirm New Password',
+                vis: 'confirm'
+              }
             ].map((f) => (
               <div key={f.key}>
                 <label
@@ -422,18 +522,32 @@ export default function Profile() {
                     type={passVisible[f.vis] ? 'text' : 'password'}
                     required
                     value={passForm[f.key]}
-                    onChange={(e) => setPassForm((p) => ({ ...p, [f.key]: e.target.value }))}
+                    onChange={(e) =>
+                      setPassForm((p) => ({
+                        ...p,
+                        [f.key]: e.target.value
+                      }))
+                    }
                     className={`${inputClass} pr-11`}
-                    placeholder={f.key === 'newPassword' ? 'Min 8 characters' : '••••••••'}
+                    placeholder={
+                      f.key === 'newPassword'
+                        ? 'Min 8 characters'
+                        : '••••••••'
+                    }
                     autoComplete={
-                      f.key === 'currentPassword' ? 'current-password' : 'new-password'
+                      f.key === 'currentPassword'
+                        ? 'current-password'
+                        : 'new-password'
                     }
                   />
 
                   <button
                     type="button"
                     onClick={() =>
-                      setPassVisible((p) => ({ ...p, [f.vis]: !p[f.vis] }))
+                      setPassVisible((p) => ({
+                        ...p,
+                        [f.vis]: !p[f.vis]
+                      }))
                     }
                     className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-brand-400)]"
                     aria-label="Toggle password"
@@ -480,8 +594,8 @@ export default function Profile() {
             <Trash2 className="mt-0.5 h-4 w-4 shrink-0 text-[var(--color-danger)]" />
 
             <p className="text-sm text-[var(--color-text-secondary)]">
-              Deleting your account permanently removes all entries, habits, and data. This cannot be
-              undone.
+              Deleting your account permanently removes all entries, habits,
+              and data. This cannot be undone.
             </p>
           </div>
 

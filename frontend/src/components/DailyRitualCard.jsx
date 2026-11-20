@@ -1,9 +1,10 @@
+
 import { useCallback, useEffect, useState } from 'react';
 import { Sunrise, Moon, Save } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getRitual, saveRitual } from '../api/ritualAPI';
-
-const TODAY = () => new Date().toISOString().split('T')[0];
+import { useAuth } from '../contexts/AuthContext';
+import { getDateKey } from '../utils/dateKey';
 
 const empty = {
   morningPlan: '',
@@ -12,7 +13,12 @@ const empty = {
   tomorrowTarget: ''
 };
 
-export default function DailyRitualCard({ date = TODAY() }) {
+export default function DailyRitualCard({ date: providedDate } = {}) {
+  const { user } = useAuth();
+
+  const date =
+    providedDate || getDateKey(new Date(), user?.timezone);
+
   const [form, setForm] = useState(empty);
   const [loading, setLoading] = useState(true);
   const [savingMorning, setSavingMorning] = useState(false);
@@ -22,6 +28,7 @@ export default function DailyRitualCard({ date = TODAY() }) {
     try {
       const res = await getRitual(date);
       const r = res.data?.ritual ?? res.data?.data?.ritual ?? res.data ?? {};
+
       setForm({
         morningPlan: r.morningPlan || '',
         nightWin: r.nightWin || '',
@@ -46,12 +53,21 @@ export default function DailyRitualCard({ date = TODAY() }) {
   const saveMorning = async (e) => {
     e.preventDefault();
     setSavingMorning(true);
+
     try {
-      const res = await saveRitual(date, { morningPlan: form.morningPlan });
+      const res = await saveRitual(date, {
+        morningPlan: form.morningPlan
+      });
+
       const r = res.data?.ritual ?? res.data?.data?.ritual;
+
       if (r) {
-        setForm((prev) => ({ ...prev, morningPlan: r.morningPlan || '' }));
+        setForm((prev) => ({
+          ...prev,
+          morningPlan: r.morningPlan || ''
+        }));
       }
+
       toast.success('Morning plan saved');
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Could not save plan');
@@ -63,13 +79,16 @@ export default function DailyRitualCard({ date = TODAY() }) {
   const saveNight = async (e) => {
     e.preventDefault();
     setSavingNight(true);
+
     try {
       const res = await saveRitual(date, {
         nightWin: form.nightWin,
         nightBlocker: form.nightBlocker,
         tomorrowTarget: form.tomorrowTarget
       });
+
       const r = res.data?.ritual ?? res.data?.data?.ritual;
+
       if (r) {
         setForm((prev) => ({
           ...prev,
@@ -78,6 +97,7 @@ export default function DailyRitualCard({ date = TODAY() }) {
           tomorrowTarget: r.tomorrowTarget || ''
         }));
       }
+
       toast.success('Night review saved');
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Could not save review');
@@ -117,7 +137,11 @@ export default function DailyRitualCard({ date = TODAY() }) {
             </p>
           </div>
         </div>
-        <label htmlFor="morning-plan" className="text-xs font-medium text-[var(--color-text-secondary)]">
+
+        <label
+          htmlFor="morning-plan"
+          className="text-xs font-medium text-[var(--color-text-secondary)]"
+        >
           Today I will…
         </label>
         <textarea
@@ -160,7 +184,10 @@ export default function DailyRitualCard({ date = TODAY() }) {
 
         <div className="space-y-3">
           <div>
-            <label htmlFor="night-win" className="text-xs font-medium text-[var(--color-text-secondary)]">
+            <label
+              htmlFor="night-win"
+              className="text-xs font-medium text-[var(--color-text-secondary)]"
+            >
               What went well?
             </label>
             <textarea
@@ -173,8 +200,12 @@ export default function DailyRitualCard({ date = TODAY() }) {
               className={fieldClass}
             />
           </div>
+
           <div>
-            <label htmlFor="night-blocker" className="text-xs font-medium text-[var(--color-text-secondary)]">
+            <label
+              htmlFor="night-blocker"
+              className="text-xs font-medium text-[var(--color-text-secondary)]"
+            >
               What got in the way?
             </label>
             <textarea
@@ -187,8 +218,12 @@ export default function DailyRitualCard({ date = TODAY() }) {
               className={fieldClass}
             />
           </div>
+
           <div>
-            <label htmlFor="tomorrow-target" className="text-xs font-medium text-[var(--color-text-secondary)]">
+            <label
+              htmlFor="tomorrow-target"
+              className="text-xs font-medium text-[var(--color-text-secondary)]"
+            >
               Tomorrow&apos;s #1 target
             </label>
             <input

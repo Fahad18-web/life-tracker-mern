@@ -1,7 +1,11 @@
+
 'use strict';
 
 const DEFAULT_TIME_ZONE = 'Asia/Karachi';
 const DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+const MAX_TIME_ZONE_CACHE_SIZE = 128;
+const MAX_FORMATTER_CACHE_SIZE = 64;
 
 /**
  * Validate a calendar date without relying on the host machine's timezone.
@@ -13,6 +17,7 @@ function parseDateString(dateString) {
   }
 
   const match = DATE_PATTERN.exec(dateString);
+
   if (!match) {
     throw new RangeError('dateString must use the YYYY-MM-DD format.');
   }
@@ -49,8 +54,37 @@ function isValidDateString(dateString) {
   }
 }
 
-const validTimeZones = new Set();
-const invalidTimeZones = new Set();
+/**
+ * Small insertion-ordered caches.
+ * Refreshing a hit makes eviction LRU-like.
+ * Fixed limits prevent unbounded memory growth.
+ */
+const validTimeZones = new Map();
+const formatterCache = new Map();
+
+function getCachedValue(cache, key) {
+  if (!cache.has(key)) return undefined;
+
+  const value = cache.get(key);
+
+  cache.delete(key);
+  cache.set(key, value);
+
+  return value;
+}
+
+function setCachedValue(cache, key, value, maxSize) {
+  if (cache.has(key)) {
+    cache.delete(key);
+  }
+
+  cache.set(key, value);
+
+  if (cache.size > maxSize) {
+    const oldestKey = cache.keys().next().value;
+    cache.delete(oldestKey);
+  }
+}
 
 /**
  * Return a supported IANA timezone.
@@ -63,47 +97,60 @@ function normalizeTimeZone(timeZone) {
 
   const candidate = timeZone.trim();
 
-  if (validTimeZones.has(candidate)) return candidate;
-  if (invalidTimeZones.has(candidate)) return DEFAULT_TIME_ZONE;
+  const cached = getCachedValue(validTimeZones, candidate);
+
+  if (cached) return cached;
 
   try {
     new Intl.DateTimeFormat('en-US', {
       timeZone: candidate
     });
 
-    validTimeZones.add(candidate);
+    setCachedValue(
+      validTimeZones,
+      candidate,
+      candidate,
+      MAX_TIME_ZONE_CACHE_SIZE
+    );
+
     return candidate;
   } catch {
-    // Bounded: user input must not be able to grow this set forever.
-    if (invalidTimeZones.size < 200) invalidTimeZones.add(candidate);
     return DEFAULT_TIME_ZONE;
   }
 }
 
-// Building an Intl.DateTimeFormat is expensive (~0.1 ms). Cache one per
-// (timezone, kind) so cron loops over many users stay cheap.
-const formatterCache = new Map();
-
 function getFormatter(kind, timeZone) {
   const key = `${kind}|${timeZone}`;
-  let formatter = formatterCache.get(key);
 
-  if (!formatter) {
-    formatter =
-      kind === 'date'
-        ? new Intl.DateTimeFormat('en-US', {
-            timeZone,
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit'
-          })
-        : new Intl.DateTimeFormat('en-GB', {
-            timeZone,
-            hour: '2-digit',
-            hourCycle: 'h23'
-          });
-    formatterCache.set(key, formatter);
+  const cached = getCachedValue(formatterCache, key);
+
+  if (cached) return cached;
+
+  let formatter;
+
+  if (kind === 'date') {
+    formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+  } else if (kind === 'hour') {
+    formatter = new Intl.DateTimeFormat('en-GB', {
+      timeZone,
+      hour: '2-digit',
+      hourCycle: 'h23'
+    });
+  } else {
+    throw new TypeError(`Unsupported formatter kind: ${kind}`);
   }
+
+  setCachedValue(
+    formatterCache,
+    key,
+    formatter,
+    MAX_FORMATTER_CACHE_SIZE
+  );
 
   return formatter;
 }
@@ -123,7 +170,10 @@ function getDateStringInTimeZone(
 ) {
   assertValidDate(instant);
 
-  const formatter = getFormatter('date', normalizeTimeZone(timeZone));
+  const formatter = getFormatter(
+    'date',
+    normalizeTimeZone(timeZone)
+  );
 
   const parts = formatter.formatToParts(instant);
 
@@ -131,18 +181,32 @@ function getDateStringInTimeZone(
     parts.map((part) => [part.type, part.value])
   );
 
-  return [
-    String(values.year).padStart(4, '0'),
-    values.month,
-    values.day
-  ].join('-');
+  const year = Number(values.year);
+  const month = values.month;
+  const day = values.day;
+
+  if (
+    !Number.isInteger(year) ||
+    year < 1 ||
+    year > 9999 ||
+    !/^\d{2}$/.test(month || '') ||
+    !/^\d{2}$/.test(day || '')
+  ) {
+    throw new RangeError(
+      'Resolved date is outside the supported YYYY-MM-DD range.'
+    );
+  }
+
+  return `${String(year).padStart(4, '0')}-${month}-${day}`;
 }
 
 /**
- * "Today" (YYYY-MM-DD) for a user's timezone. Single source of truth for
- * every backend feature that needs the current calendar day.
+ * "Today" (YYYY-MM-DD) for a user's timezone.
  */
-function getTodayInTimeZone(timeZone = DEFAULT_TIME_ZONE, now = new Date()) {
+function getTodayInTimeZone(
+  timeZone = DEFAULT_TIME_ZONE,
+  now = new Date()
+) {
   return getDateStringInTimeZone(timeZone, now);
 }
 
@@ -156,7 +220,10 @@ function getHourInTimeZone(
 ) {
   assertValidDate(instant);
 
-  const formatter = getFormatter('hour', normalizeTimeZone(timeZone));
+  const formatter = getFormatter(
+    'hour',
+    normalizeTimeZone(timeZone)
+  );
 
   const hourPart = formatter
     .formatToParts(instant)
@@ -186,7 +253,7 @@ function addDaysToDateString(dateString, days) {
 
   const year = date.getUTCFullYear();
 
-  if (year < 1 || year > 9999) {
+  if (!Number.isInteger(year) || year < 1 || year > 9999) {
     throw new RangeError(
       'Resulting date is outside the supported YYYY-MM-DD range.'
     );
