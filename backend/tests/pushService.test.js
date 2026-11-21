@@ -10,19 +10,26 @@ const modulePaths = {
   pushService: require.resolve('../services/pushService')
 };
 
+const DEFAULT_ENDPOINT =
+  'https://push.example.com/subscription';
+
 function loadPushService(t, options = {}) {
   const {
     configured = true,
     user = {
       pushSubscription: {
-        endpoint: 'https://push.example.com/subscription',
+        endpoint: DEFAULT_ENDPOINT,
         keys: {
           p256dh: 'test-p256dh',
           auth: 'test-auth'
         }
       }
     },
-    sendError = null
+    sendError = null,
+    cleanupResult = {
+      matchedCount: 1,
+      modifiedCount: 1
+    }
   } = options;
 
   const originalEnv = {
@@ -45,7 +52,8 @@ function loadPushService(t, options = {}) {
     vapid: [],
     notifications: [],
     findById: [],
-    updates: []
+    updates: [],
+    cleanupUpdates: []
   };
 
   const webpush = {
@@ -76,6 +84,11 @@ function loadPushService(t, options = {}) {
     findByIdAndUpdate(userId, update) {
       calls.updates.push({ userId, update });
       return Promise.resolve({});
+    },
+
+    async updateOne(filter, update) {
+      calls.cleanupUpdates.push({ filter, update });
+      return cleanupResult;
     }
   };
 
@@ -136,6 +149,7 @@ test('configures VAPID when public and private keys exist', (t) => {
   const { calls } = loadPushService(t);
 
   assert.equal(calls.vapid.length, 1);
+
   assert.deepEqual(calls.vapid[0], [
     'mailto:test@example.com',
     'test-public-key',
@@ -157,14 +171,17 @@ test('sends a push notification successfully', async (t) => {
     payload
   );
 
-  assert.deepEqual(result, { sent: true });
+  assert.deepEqual(result, {
+    sent: true,
+    deliveryOutcome: 'accepted'
+  });
 
   assert.deepEqual(calls.findById, ['user-123']);
   assert.equal(calls.notifications.length, 1);
 
   assert.equal(
     calls.notifications[0].subscription.endpoint,
-    'https://push.example.com/subscription'
+    DEFAULT_ENDPOINT
   );
 
   assert.equal(
@@ -186,10 +203,13 @@ test('returns no_subscription when the user has no saved subscription', async (t
   assert.deepEqual(result, {
     sent: false,
     reason: 'no_subscription',
-    statusCode: null
+    statusCode: null,
+    deliveryOutcome: 'rejected',
+    retryable: false
   });
 
   assert.equal(calls.notifications.length, 0);
+  assert.equal(calls.cleanupUpdates.length, 0);
 });
 
 test('returns a configuration failure when VAPID keys are missing', async (t) => {
@@ -205,62 +225,91 @@ test('returns a configuration failure when VAPID keys are missing', async (t) =>
   assert.deepEqual(result, {
     sent: false,
     reason: 'push_not_configured',
-    statusCode: 503
+    statusCode: 503,
+    deliveryOutcome: 'rejected',
+    retryable: true
   });
 
   assert.equal(calls.findById.length, 0);
   assert.equal(calls.notifications.length, 0);
 });
 
-test('removes an expired subscription after a 410 response', async (t) => {
-  const error = new Error('Subscription expired');
-  error.statusCode = 410;
+for (const statusCode of [404, 410]) {
+  test(
+    `removes matching subscription after ${statusCode} response`,
+    async (t) => {
+      const error = new Error('Provider subscription error');
+      error.statusCode = statusCode;
 
-  const { service, calls } = loadPushService(t, {
-    sendError: error
-  });
+      const { service, calls } = loadPushService(t, {
+        sendError: error
+      });
 
-  const result = await service.sendToUser(
-    'user-123',
-    { title: 'Test' }
-  );
+      const result = await service.sendToUser(
+        'user-123',
+        { title: 'Test' }
+      );
 
-  assert.equal(result.sent, false);
-  assert.equal(result.reason, 'Subscription expired');
-  assert.equal(result.statusCode, 410);
-  assert.equal(result.subscriptionRemoved, true);
+      assert.deepEqual(result, {
+        sent: false,
+        reason: 'invalid_subscription',
+        statusCode,
+        deliveryOutcome: 'rejected',
+        retryable: false,
+        subscriptionRemoved: true
+      });
 
-  assert.deepEqual(calls.updates, [
-    {
-      userId: 'user-123',
-      update: {
-        $unset: { pushSubscription: 1 }
-      }
+      assert.deepEqual(calls.cleanupUpdates, [
+        {
+          filter: {
+            _id: 'user-123',
+            'pushSubscription.endpoint': DEFAULT_ENDPOINT
+          },
+          update: {
+            $unset: {
+              pushSubscription: 1
+            }
+          }
+        }
+      ]);
     }
-  ]);
-});
-
-test('removes an expired subscription after a 404 response', async (t) => {
-  const error = new Error('Subscription not found');
-  error.statusCode = 404;
-
-  const { service, calls } = loadPushService(t, {
-    sendError: error
-  });
-
-  const result = await service.sendToUser(
-    'user-123',
-    { title: 'Test' }
   );
+}
 
-  assert.equal(result.sent, false);
-  assert.equal(result.statusCode, 404);
-  assert.equal(result.subscriptionRemoved, true);
-  assert.equal(calls.updates.length, 1);
-});
+test(
+  'does not report subscription removed if endpoint no longer matches',
+  async (t) => {
+    const error = new Error('Provider subscription error');
+    error.statusCode = 410;
 
-test('does not remove subscription for a non-expired delivery error', async (t) => {
-  const error = new Error('Push provider unavailable');
+    const { service, calls } = loadPushService(t, {
+      sendError: error,
+      cleanupResult: {
+        matchedCount: 0,
+        modifiedCount: 0
+      }
+    });
+
+    const result = await service.sendToUser(
+      'user-123',
+      { title: 'Test' }
+    );
+
+    assert.deepEqual(result, {
+      sent: false,
+      reason: 'invalid_subscription',
+      statusCode: 410,
+      deliveryOutcome: 'rejected',
+      retryable: false,
+      subscriptionRemoved: false
+    });
+
+    assert.equal(calls.cleanupUpdates.length, 1);
+  }
+);
+
+test('does not remove subscription for a 503 provider error', async (t) => {
+  const error = new Error('Sensitive provider error details');
   error.statusCode = 503;
 
   const { service, calls } = loadPushService(t, {
@@ -272,10 +321,85 @@ test('does not remove subscription for a non-expired delivery error', async (t) 
     { title: 'Test' }
   );
 
-  assert.equal(result.sent, false);
-  assert.equal(result.reason, 'Push provider unavailable');
-  assert.equal(result.statusCode, 503);
-  assert.equal(result.subscriptionRemoved, false);
+  assert.deepEqual(result, {
+    sent: false,
+    reason: 'push_provider_unavailable',
+    statusCode: 503,
+    deliveryOutcome: 'rejected',
+    retryable: true,
+    subscriptionRemoved: false
+  });
 
-  assert.equal(calls.updates.length, 0);
+  assert.equal(calls.cleanupUpdates.length, 0);
+});
+
+test('classifies 429 provider response as retryable', async (t) => {
+  const error = new Error('Too many requests');
+  error.statusCode = 429;
+
+  const { service, calls } = loadPushService(t, {
+    sendError: error
+  });
+
+  const result = await service.sendToUser(
+    'user-123',
+    { title: 'Test' }
+  );
+
+  assert.deepEqual(result, {
+    sent: false,
+    reason: 'push_rate_limited',
+    statusCode: 429,
+    deliveryOutcome: 'rejected',
+    retryable: true,
+    subscriptionRemoved: false
+  });
+
+  assert.equal(calls.cleanupUpdates.length, 0);
+});
+
+test('classifies network errors as uncertain and non-retryable', async (t) => {
+  const error = new Error('Network connection lost');
+
+  const { service, calls } = loadPushService(t, {
+    sendError: error
+  });
+
+  const result = await service.sendToUser(
+    'user-123',
+    { title: 'Test' }
+  );
+
+  assert.deepEqual(result, {
+    sent: false,
+    reason: 'push_delivery_uncertain',
+    statusCode: null,
+    deliveryOutcome: 'uncertain',
+    retryable: false,
+    subscriptionRemoved: false
+  });
+
+  assert.equal(calls.cleanupUpdates.length, 0);
+});
+
+test('rejects invalid payload without contacting provider', async (t) => {
+  const { service, calls } = loadPushService(t);
+
+  const circularPayload = {};
+  circularPayload.self = circularPayload;
+
+  const result = await service.sendToUser(
+    'user-123',
+    circularPayload
+  );
+
+  assert.deepEqual(result, {
+    sent: false,
+    reason: 'push_payload_invalid',
+    statusCode: null,
+    deliveryOutcome: 'rejected',
+    retryable: false
+  });
+
+  assert.equal(calls.notifications.length, 0);
 });
