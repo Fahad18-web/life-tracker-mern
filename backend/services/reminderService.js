@@ -22,9 +22,13 @@ const CLAIM_LEASE_MS = 10 * 60 * 1000;
 const ERROR_MESSAGE_MAX_LENGTH = 500;
 
 function clientBaseUrl() {
-  return (
-    process.env.CLIENT_URL || 'http://localhost:5173'
-  ).replace(/\/+$/, '');
+  const configuredUrl = process.env.CLIENT_URL;
+
+  if (process.env.NODE_ENV === 'production' && !configuredUrl) {
+    throw new Error('CLIENT_URL must be configured in production.');
+  }
+
+  return (configuredUrl || 'http://localhost:5173').replace(/\/+$/, '');
 }
 
 function dateInTimezone(timeZone = 'Asia/Karachi') {
@@ -36,10 +40,20 @@ function hourInTimezone(timeZone = 'Asia/Karachi') {
 }
 
 function safeErrorMessage(error, fallback) {
-  const message =
+  let message =
     typeof error?.message === 'string' && error.message.trim()
       ? error.message.trim()
       : fallback;
+
+  // Provider and network errors can contain credentials, URLs, or user data.
+  message = message
+    .replace(/https?:\/\/[^\s"'<>]+/gi, '[redacted-url]')
+    .replace(/\bBearer\s+[^\s,;]+/gi, 'Bearer [redacted]')
+    .replace(
+      /\b(authorization|api[-_ ]?key|access[-_ ]?token|refresh[-_ ]?token|secret|vapid[-_ ]?(?:public|private)?key)\b\s*[:=]\s*[^\s,;]+/gi,
+      '$1=[redacted]'
+    )
+    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[redacted-email]');
 
   return message.slice(0, ERROR_MESSAGE_MAX_LENGTH);
 }
@@ -495,14 +509,24 @@ async function deliverPush({
       'push_delivery_failed'
     );
 
+    // Preserve the provider's classification. Only an explicitly rejected,
+    // retryable failure may be attempted again. Unknown outcomes are uncertain.
+    const deliveryOutcome = delivery?.deliveryOutcome;
+    const retryable =
+      deliveryOutcome === 'rejected' && delivery?.retryable === true;
+    const status =
+      deliveryOutcome === 'rejected'
+        ? 'failed'
+        : 'uncertain';
+
     const finished = await finishChannel({
       userId: user._id,
       localDate,
       channel: 'push',
       claimId: claim.claimId,
-      status: 'failed',
+      status,
       errorMessage: message,
-      retryable: true
+      retryable
     });
 
     if (!finished) {
@@ -517,6 +541,8 @@ async function deliverPush({
     addDeliveryError(result, {
       channel: 'push',
       message,
+      deliveryOutcome: status,
+      retryable,
       statusCode: delivery?.statusCode ?? null
     });
   } catch (error) {
@@ -580,81 +606,109 @@ async function runDailyReminders({ strictHour = false } = {}) {
   };
 
   for (const user of users) {
-    const timeZone = normalizeTimeZone(
-      user.timezone || 'Asia/Karachi'
-    );
-
-    const localDate = getTodayInTimeZone(timeZone);
-    const localHour = getHourInTimeZone(timeZone);
-
-    const preferredHour = Number(
-      user.preferences?.dailyReminderHour ?? 20
-    );
-
-    if (
-      !Number.isInteger(preferredHour) ||
-      preferredHour < 0 ||
-      preferredHour > 23
-    ) {
-      result.skipped++;
-      result.skippedInvalidHour++;
-      continue;
-    }
-
-    if (strictHour && localHour !== preferredHour) {
-      result.skipped++;
-      result.skippedWrongHour++;
-      continue;
-    }
-
-    const hasEntry = await Entry.exists({
-      userId: user._id,
-      date: localDate
-    });
-
-    if (hasEntry) {
-      result.skipped++;
-      result.skippedAlreadyLogged++;
-      continue;
-    }
-
-    await ensureDeliveryRecord({
-      userId: user._id,
-      localDate,
-      timeZone,
-      preferredHour
-    });
-
-    let variant = 'default';
-
     try {
-      variant = await resolveReminderVariant(
-        user._id,
-        localDate
+      const timeZone = normalizeTimeZone(
+        user.timezone || 'Asia/Karachi'
       );
-    } catch {
-      result.variantFallbacks++;
+
+      const localDate = getTodayInTimeZone(timeZone);
+      const localHour = getHourInTimeZone(timeZone);
+
+      const preferredHour = Number(
+        user.preferences?.dailyReminderHour ?? 20
+      );
+
+      if (
+        !Number.isInteger(preferredHour) ||
+        preferredHour < 0 ||
+        preferredHour > 23
+      ) {
+        result.skipped++;
+        result.skippedInvalidHour++;
+        continue;
+      }
+
+      if (strictHour && localHour !== preferredHour) {
+        result.skipped++;
+        result.skippedWrongHour++;
+        continue;
+      }
+
+      const hasEntry = await Entry.exists({
+        userId: user._id,
+        date: localDate
+      });
+
+      if (hasEntry) {
+        result.skipped++;
+        result.skippedAlreadyLogged++;
+        continue;
+      }
+
+      await ensureDeliveryRecord({
+        userId: user._id,
+        localDate,
+        timeZone,
+        preferredHour
+      });
+
+      let variant = 'default';
+
+      try {
+        variant = await resolveReminderVariant(
+          user._id,
+          localDate
+        );
+      } catch {
+        result.variantFallbacks++;
+      }
+
+      const now = new Date();
+
+      // Isolate channel execution so an email-side state/database error
+      // does not prevent the push channel from being attempted.
+      try {
+        await deliverEmail({
+          user,
+          localDate,
+          logUrl,
+          variant,
+          now,
+          result
+        });
+      } catch (error) {
+        result.failed++;
+        addDeliveryError(result, {
+          channel: 'email',
+          message: safeErrorMessage(error, 'email_processing_failed')
+        });
+      }
+
+      try {
+        await deliverPush({
+          user,
+          localDate,
+          logUrl,
+          variant,
+          now,
+          result
+        });
+      } catch (error) {
+        result.pushFailed++;
+        addDeliveryError(result, {
+          channel: 'push',
+          message: safeErrorMessage(error, 'push_processing_failed')
+        });
+      }
+    } catch (error) {
+      // A malformed timezone or user-specific database issue must not abort
+      // reminder processing for every remaining user.
+      result.userProcessingFailed = (result.userProcessingFailed || 0) + 1;
+      addDeliveryError(result, {
+        channel: 'user',
+        message: safeErrorMessage(error, 'user_reminder_processing_failed')
+      });
     }
-
-    const now = new Date();
-
-    await deliverEmail({
-      user,
-      localDate,
-      logUrl,
-      variant,
-      now,
-      result
-    });
-
-    await deliverPush({
-      user,
-      localDate,
-      logUrl,
-      variant,
-      now,
-      result
-    });
   }
 
   result.errors = result.errors.slice(0, 10);

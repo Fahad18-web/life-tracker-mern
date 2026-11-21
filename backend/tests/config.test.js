@@ -179,7 +179,11 @@ test('preserves environment flags', () => {
   assert.equal(development.isProd, false);
 
   const production = getConfig({
-    NODE_ENV: 'production'
+    NODE_ENV: 'production',
+    CLIENT_URL: 'https://example.com',
+    MONGODB_URI: 'mongodb://127.0.0.1:27017/lifetracker_test',
+    JWT_SECRET: 'test-jwt-secret-at-least-32-characters-long',
+    CRON_SECRET: 'test-cron-secret-at-least-32-characters-long'
   });
 
   assert.equal(production.isDev, false);

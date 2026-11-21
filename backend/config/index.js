@@ -1,23 +1,11 @@
 
+'use strict';
+
 require('dotenv').config();
 
 const DEFAULT_CLIENT_URL = 'http://localhost:5173';
 
-/**
- * Normalize and validate a configured HTTP(S) origin.
- *
- * Accepted:
- *   https://example.com
- *   https://example.com/
- *   http://localhost:5173
- *
- * Rejected:
- *   *
- *   https://example.com/dashboard
- *   https://example.com?token=123
- *   javascript:alert(1)
- */
-function normalizeOrigin(value) {
+function normalizeOrigin(value, { requireHttps = false } = {}) {
   if (typeof value !== 'string' || !value.trim()) {
     throw new Error('CORS origin must be a non-empty string.');
   }
@@ -29,7 +17,7 @@ function normalizeOrigin(value) {
     input.includes('\\') ||
     !/^https?:\/\//i.test(input)
   ) {
-    throw new Error(`Invalid CORS origin: ${input}`);
+    throw new Error('Invalid CORS origin.');
   }
 
   let parsed;
@@ -37,7 +25,7 @@ function normalizeOrigin(value) {
   try {
     parsed = new URL(input);
   } catch {
-    throw new Error(`Invalid CORS origin: ${input}`);
+    throw new Error('Invalid CORS origin.');
   }
 
   if (
@@ -49,16 +37,17 @@ function normalizeOrigin(value) {
     parsed.search ||
     parsed.hash
   ) {
-    throw new Error(`Invalid CORS origin: ${input}`);
+    throw new Error('Invalid CORS origin.');
+  }
+
+  if (requireHttps && parsed.protocol !== 'https:') {
+    throw new Error('Production CORS origins must use HTTPS.');
   }
 
   return parsed.origin;
 }
 
-/**
- * Parse comma-separated additional CORS origins.
- */
-function parseCorsOrigins(value) {
+function parseCorsOrigins(value, options = {}) {
   if (typeof value !== 'string' || !value.trim()) {
     return [];
   }
@@ -67,35 +56,45 @@ function parseCorsOrigins(value) {
     .split(',')
     .map(origin => origin.trim())
     .filter(Boolean)
-    .map(normalizeOrigin);
+    .map(origin => normalizeOrigin(origin, options));
 }
 
 const env = process.env.NODE_ENV || 'development';
+const isProd = env === 'production';
 
 let clientUrl;
 let corsOrigins;
 
 try {
-  // In production, CLIENT_URL must be explicitly configured.
-  if (env === 'production' && !process.env.CLIENT_URL?.trim()) {
+  if (isProd && !process.env.CLIENT_URL?.trim()) {
     throw new Error(
       'CLIENT_URL must be explicitly configured in production.'
     );
   }
 
+  const originOptions = {
+    requireHttps: isProd
+  };
+
   clientUrl = normalizeOrigin(
-    process.env.CLIENT_URL || DEFAULT_CLIENT_URL
+    process.env.CLIENT_URL || DEFAULT_CLIENT_URL,
+    originOptions
   );
 
   const additionalOrigins = parseCorsOrigins(
-    process.env.CORS_ORIGINS || ''
+    process.env.CORS_ORIGINS || '',
+    originOptions
   );
 
-  // CLIENT_URL is the primary trusted origin.
-  // CORS_ORIGINS adds optional trusted origins.
-  corsOrigins = [...new Set([clientUrl, ...additionalOrigins])];
+  corsOrigins = [...new Set([
+    clientUrl,
+    ...additionalOrigins
+  ])];
 } catch (error) {
-  console.error(`❌ CORS configuration error: ${error.message}`);
+  console.error(
+    `[Configuration] CORS configuration error: ${error.message}`
+  );
+
   process.exit(1);
 }
 
@@ -114,25 +113,47 @@ const config = {
   corsOrigins,
 
   isDev: env === 'development',
-  isProd: env === 'production'
+  isProd
 };
 
-// Required environment variable validation.
+// Validate required environment variables.
 const required = ['mongoUri', 'jwt.secret'];
+
+if (isProd) {
+  required.push('cronSecret');
+}
+
+const configWithCron = {
+  ...config,
+  cronSecret: process.env.CRON_SECRET
+};
 
 const missing = required.filter(key => {
   const value = key.split('.').reduce(
     (obj, k) => obj?.[k],
-    config
+    configWithCron
   );
 
-  return !value;
+  return typeof value !== 'string' || !value.trim();
 });
 
 if (missing.length > 0) {
   console.error(
-    `❌ Missing required env variables: ${missing.join(', ')}`
+    `[Configuration] Missing required environment variables: ${missing.join(', ')}`
   );
+
+  process.exit(1);
+}
+
+// Require a sufficiently strong cron secret in production.
+if (
+  isProd &&
+  Buffer.byteLength(configWithCron.cronSecret, 'utf8') < 32
+) {
+  console.error(
+    '[Configuration] CRON_SECRET must contain at least 32 bytes in production.'
+  );
+
   process.exit(1);
 }
 
