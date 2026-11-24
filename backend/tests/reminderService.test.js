@@ -1,4 +1,3 @@
-
 'use strict';
 
 const test = require('node:test');
@@ -1193,4 +1192,277 @@ test('push remains independently deliverable when email is uncertain', async (t)
 
   assert.equal(result.sent, 0);
   assert.equal(result.pushSent, 1);
+});
+
+// -----------------------------------------------------------------------------
+// Catch-up window: a missed preferred-hour run can still be delivered later
+// -----------------------------------------------------------------------------
+
+/**
+ * Like freezeTime(), but the clock can be moved between runs inside one test.
+ * Returns setNow(isoDate).
+ */
+function useMovableClock(t, isoDate) {
+  const RealDate = global.Date;
+  let currentTimestamp = new RealDate(isoDate).getTime();
+
+  class MovableDate extends RealDate {
+    constructor(...args) {
+      if (args.length === 0) {
+        super(currentTimestamp);
+      } else {
+        super(...args);
+      }
+    }
+
+    static now() {
+      return currentTimestamp;
+    }
+  }
+
+  global.Date = MovableDate;
+
+  t.after(() => {
+    global.Date = RealDate;
+  });
+
+  return (nextIsoDate) => {
+    currentTimestamp = new RealDate(nextIsoDate).getTime();
+  };
+}
+
+function userWithHour(hour, overrides = {}) {
+  return createUser({
+    preferences: {
+      dailyReminderEnabled: true,
+      dailyReminderHour: hour
+    },
+    ...overrides
+  });
+}
+
+// 2026-11-14 in Asia/Karachi (UTC+5): 15:00Z = 20:00, 16:00Z = 21:00 ...
+test('the catch-up window is the preferred hour plus three hours, clipped at 23', (t) => {
+  const { service } = loadReminderService(t);
+  const inWindow = service.isWithinReminderWindow;
+
+  assert.equal(service.REMINDER_CATCHUP_HOURS, 3);
+
+  const cases = [
+    // [preferredHour, localHour, expected]
+    [20, 19, false],
+    [20, 20, true],
+    [20, 21, true],
+    [20, 23, true],
+    [17, 20, true],
+    [17, 21, false],
+    [22, 22, true],
+    [22, 23, true],
+    [22, 0, false],
+    [23, 23, true],
+    [23, 0, false],
+    [0, 0, true],
+    [0, 3, true],
+    [0, 4, false]
+  ];
+
+  for (const [preferredHour, localHour, expected] of cases) {
+    assert.equal(
+      inWindow(localHour, preferredHour),
+      expected,
+      `preferred ${preferredHour}, local ${localHour}`
+    );
+  }
+});
+
+test('a reminder missed at the preferred hour is delivered by a later run in the window', async (t) => {
+  freezeTime(t, '2026-11-14T16:00:00.000Z'); // 21:00 PKT, preferred 20:00
+
+  const user = userWithHour(20);
+
+  const { service, calls, deliveryRecords } = loadReminderService(t, {
+    users: [user]
+  });
+
+  const result = await service.runDailyReminders({ strictHour: true });
+
+  assert.equal(result.sent, 1);
+  assert.equal(result.pushSent, 1);
+  assert.equal(result.catchUpProcessed, 1);
+  assert.equal(result.skippedWrongHour, 0);
+  assert.equal(calls.emails.length, 1);
+  assert.equal(calls.pushes.length, 1);
+
+  const record = getDeliveryRecord(deliveryRecords, user._id, '2026-11-14');
+  assert.equal(record.email.status, 'sent');
+  assert.equal(record.push.status, 'sent');
+});
+
+test('the run at the exact preferred hour is not counted as a catch-up', async (t) => {
+  freezeTime(t, '2026-11-14T15:00:00.000Z'); // 20:00 PKT
+
+  const { service } = loadReminderService(t, { users: [userWithHour(20)] });
+
+  const result = await service.runDailyReminders({ strictHour: true });
+
+  assert.equal(result.sent, 1);
+  assert.equal(result.catchUpProcessed, 0);
+});
+
+test('the last hour of the window still delivers', async (t) => {
+  freezeTime(t, '2026-11-14T18:00:00.000Z'); // 23:00 PKT, preferred 20:00
+
+  const { service, calls } = loadReminderService(t, {
+    users: [userWithHour(20)]
+  });
+
+  const result = await service.runDailyReminders({ strictHour: true });
+
+  assert.equal(result.sent, 1);
+  assert.equal(calls.emails.length, 1);
+});
+
+test('runs after the window skip the user and report why', async (t) => {
+  freezeTime(t, '2026-11-14T16:00:00.000Z'); // 21:00 PKT, window for 17:00 ends 20:00
+
+  const { service, calls } = loadReminderService(t, {
+    users: [userWithHour(17)]
+  });
+
+  const result = await service.runDailyReminders({ strictHour: true });
+
+  assert.equal(result.sent, 0);
+  assert.equal(result.skipped, 1);
+  assert.equal(result.skippedAfterWindow, 1);
+  assert.equal(result.skippedBeforeWindow, 0);
+  assert.equal(result.skippedWrongHour, 1); // total, kept for compatibility
+  assert.equal(calls.entryQueries.length, 0);
+  assert.equal(calls.emails.length, 0);
+  assert.equal(calls.pushes.length, 0);
+});
+
+test('runs before the preferred hour never send early', async (t) => {
+  freezeTime(t, '2026-11-14T14:00:00.000Z'); // 19:00 PKT, preferred 20:00
+
+  const { service, calls } = loadReminderService(t, {
+    users: [userWithHour(20)]
+  });
+
+  const result = await service.runDailyReminders({ strictHour: true });
+
+  assert.equal(result.sent, 0);
+  assert.equal(result.skippedBeforeWindow, 1);
+  assert.equal(result.skippedAfterWindow, 0);
+  assert.equal(result.skippedWrongHour, 1);
+  assert.equal(calls.emails.length, 0);
+});
+
+test('the window never crosses midnight into the next local day', async (t) => {
+  const setNow = useMovableClock(t, '2026-11-14T18:00:00.000Z'); // 23:00 PKT
+
+  const { service, calls } = loadReminderService(t, {
+    users: [userWithHour(22)]
+  });
+
+  const lateRun = await service.runDailyReminders({ strictHour: true });
+  assert.equal(lateRun.sent, 1);
+
+  setNow('2026-11-14T19:00:00.000Z'); // 00:00 PKT on 15 Nov, preferred 22:00
+  const afterMidnight = await service.runDailyReminders({ strictHour: true });
+
+  assert.equal(afterMidnight.sent, 0);
+  assert.equal(afterMidnight.skippedBeforeWindow, 1);
+  assert.equal(calls.emails.length, 1);
+});
+
+test('hourly runs inside the window never send the same reminder twice', async (t) => {
+  const setNow = useMovableClock(t, '2026-11-14T15:00:00.000Z'); // 20:00 PKT
+
+  const user = userWithHour(20);
+
+  const { service, calls, deliveryRecords } = loadReminderService(t, {
+    users: [user]
+  });
+
+  const first = await service.runDailyReminders({ strictHour: true });
+  assert.equal(first.sent, 1);
+  assert.equal(first.pushSent, 1);
+
+  for (const hourUtc of ['16', '17', '18']) {
+    setNow(`2026-11-14T${hourUtc}:00:00.000Z`); // 21:00, 22:00, 23:00 PKT
+
+    const later = await service.runDailyReminders({ strictHour: true });
+
+    assert.equal(later.sent, 0, `email resent at ${hourUtc}:00Z`);
+    assert.equal(later.pushSent, 0, `push resent at ${hourUtc}:00Z`);
+  }
+
+  assert.equal(calls.emails.length, 1);
+  assert.equal(calls.pushes.length, 1);
+
+  const record = getDeliveryRecord(deliveryRecords, user._id, '2026-11-14');
+  assert.equal(record.email.attempts, 1);
+  assert.equal(record.push.attempts, 1);
+});
+
+test('a user who logs during the catch-up window stops receiving reminders', async (t) => {
+  const setNow = useMovableClock(t, '2026-11-14T16:00:00.000Z'); // 21:00 PKT
+
+  let logged = false;
+
+  const { service, calls } = loadReminderService(t, {
+    users: [userWithHour(20)],
+    hasEntry: async () => logged
+  });
+
+  // The 20:00 run failed to reach the app; the user then logs at 21:30.
+  logged = true;
+  setNow('2026-11-14T17:00:00.000Z'); // 22:00 PKT
+
+  const result = await service.runDailyReminders({ strictHour: true });
+
+  assert.equal(result.skippedAlreadyLogged, 1);
+  assert.equal(result.sent, 0);
+  assert.equal(calls.emails.length, 0);
+});
+
+test('the window is evaluated in the user timezone, not the server timezone', async (t) => {
+  // 02:00Z on 15 Nov = 21:00 on 14 Nov in New York (UTC-5), preferred 20:00.
+  freezeTime(t, '2026-11-15T02:00:00.000Z');
+
+  const user = userWithHour(20, { timezone: 'America/New_York' });
+
+  const { service, calls, deliveryRecords } = loadReminderService(t, {
+    users: [user]
+  });
+
+  const result = await service.runDailyReminders({ strictHour: true });
+
+  assert.equal(result.sent, 1);
+  assert.equal(result.catchUpProcessed, 1);
+  assert.deepEqual(calls.entryQueries, [
+    { userId: user._id, date: '2026-11-14' }
+  ]);
+  assert.ok(getDeliveryRecord(deliveryRecords, user._id, '2026-11-14'));
+});
+
+test('a permanent email rejection is not retried by later catch-up runs', async (t) => {
+  const setNow = useMovableClock(t, '2026-11-14T15:00:00.000Z'); // 20:00 PKT
+
+  const { service, calls } = loadReminderService(t, {
+    users: [userWithHour(20)],
+    emailError: {
+      message: 'invalid recipient',
+      deliveryOutcome: 'rejected',
+      retryable: false
+    }
+  });
+
+  await service.runDailyReminders({ strictHour: true });
+  setNow('2026-11-14T16:00:00.000Z');
+  await service.runDailyReminders({ strictHour: true });
+  setNow('2026-11-14T17:00:00.000Z');
+  await service.runDailyReminders({ strictHour: true });
+
+  assert.equal(calls.emails.length, 1);
 });

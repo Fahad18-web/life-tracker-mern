@@ -1,4 +1,3 @@
-
 'use strict';
 
 const crypto = require('node:crypto');
@@ -21,6 +20,12 @@ const MAX_CHANNEL_ATTEMPTS = 3;
 const CLAIM_LEASE_MS = 10 * 60 * 1000;
 const ERROR_MESSAGE_MAX_LENGTH = 500;
 
+// A reminder is due at the user's preferred hour. If that run is missed (host
+// restart, provider outage, scheduler failure) the next hourly runs may still
+// deliver it, up to this many hours later, never past 23:59 local time.
+// Duplicates are impossible: every channel is claimed once per user per local day.
+const REMINDER_CATCHUP_HOURS = 3;
+
 function clientBaseUrl() {
   const configuredUrl = process.env.CLIENT_URL;
 
@@ -37,6 +42,20 @@ function dateInTimezone(timeZone = 'Asia/Karachi') {
 
 function hourInTimezone(timeZone = 'Asia/Karachi') {
   return getHourInTimeZone(normalizeTimeZone(timeZone));
+}
+
+/**
+ * Whether `localHour` is inside the delivery window that starts at the user's
+ * preferred hour and lasts `catchupHours` more hours (clipped at 23).
+ */
+function isWithinReminderWindow(
+  localHour,
+  preferredHour,
+  catchupHours = REMINDER_CATCHUP_HOURS
+) {
+  const lastHour = Math.min(23, preferredHour + catchupHours);
+
+  return localHour >= preferredHour && localHour <= lastHour;
 }
 
 function safeErrorMessage(error, fallback) {
@@ -598,6 +617,9 @@ async function runDailyReminders({ strictHour = false } = {}) {
     pushNotClaimed: 0,
     skipped: 0,
     skippedWrongHour: 0,
+    skippedBeforeWindow: 0,
+    skippedAfterWindow: 0,
+    catchUpProcessed: 0,
     skippedAlreadyLogged: 0,
     skippedInvalidHour: 0,
     failed: 0,
@@ -628,9 +650,20 @@ async function runDailyReminders({ strictHour = false } = {}) {
         continue;
       }
 
-      if (strictHour && localHour !== preferredHour) {
+      if (
+        strictHour &&
+        !isWithinReminderWindow(localHour, preferredHour)
+      ) {
         result.skipped++;
+        // skippedWrongHour stays the total of both reasons (API compatibility).
         result.skippedWrongHour++;
+
+        if (localHour < preferredHour) {
+          result.skippedBeforeWindow++;
+        } else {
+          result.skippedAfterWindow++;
+        }
+
         continue;
       }
 
@@ -643,6 +676,11 @@ async function runDailyReminders({ strictHour = false } = {}) {
         result.skipped++;
         result.skippedAlreadyLogged++;
         continue;
+      }
+
+      if (localHour > preferredHour) {
+        // Processed after the exact preferred hour: a catch-up run.
+        result.catchUpProcessed++;
       }
 
       await ensureDeliveryRecord({
@@ -717,6 +755,8 @@ async function runDailyReminders({ strictHour = false } = {}) {
 
 module.exports = {
   runDailyReminders,
+  isWithinReminderWindow,
+  REMINDER_CATCHUP_HOURS,
   dateInTimezone,
   hourInTimezone
 };
