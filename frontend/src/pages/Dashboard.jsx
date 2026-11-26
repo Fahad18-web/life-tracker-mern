@@ -1,9 +1,7 @@
-
 import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Flame,
-  TrendingUp,
   ArrowRight,
   RefreshCw,
   Lightbulb,
@@ -12,9 +10,7 @@ import {
   LayoutDashboard,
   LineChart,
   Sparkles,
-  CalendarDays,
-  Activity,
-  Trophy
+  CalendarDays
 } from 'lucide-react';
 
 import { useAuth } from '../contexts/AuthContext';
@@ -50,35 +46,26 @@ const GRADE_COLORS = {
   F: 'var(--color-danger)'
 };
 
-function StatCard({ label, value, sub, valueColor, icon: Icon }) {
+/* Tonal tile for use inside an existing panel (no nested borders). */
+function StatCard({ label, value, sub, valueColor }) {
   return (
-    <div className="group relative overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--color-brand-500)]/40 hover:shadow-lg hover:shadow-black/5">
-      <div className="flex items-start justify-between gap-2">
-        <p className="text-[11px] font-medium text-[var(--color-text-muted)]">
-          {label}
-        </p>
-
-        {Icon && (
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[var(--color-brand-600)]/10 text-[var(--color-brand-400)]">
-            <Icon className="h-4 w-4" />
-          </span>
-        )}
-      </div>
+    <div className="rounded-xl bg-[var(--color-bg)]/50 p-3.5">
+      <p className="text-xs font-medium text-[var(--color-text-muted)]">
+        {label}
+      </p>
 
       <p
-        className="mt-2 font-display text-2xl font-semibold tracking-tight"
+        className="mt-1.5 font-display text-2xl font-semibold tracking-tight"
         style={{ color: valueColor || 'var(--color-text)' }}
       >
         {value}
       </p>
 
       {sub && (
-        <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
+        <p className="mt-0.5 text-xs text-[var(--color-text-secondary)]">
           {sub}
         </p>
       )}
-
-      <div className="pointer-events-none absolute -bottom-8 -right-8 h-20 w-20 rounded-full bg-[var(--color-brand-500)]/5 blur-2xl transition-all duration-300 group-hover:bg-[var(--color-brand-500)]/10" />
     </div>
   );
 }
@@ -107,42 +94,47 @@ function readTab() {
   return 'today';
 }
 
-function SectionHeading({ icon: Icon, title, subtitle }) {
+function SectionHeading({ id, title, subtitle }) {
   return (
-    <div className="mb-3 flex items-center gap-3">
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--color-brand-600)]/10 text-[var(--color-brand-400)]">
-        <Icon className="h-4 w-4" />
-      </span>
+    <div className="mb-3">
+      <h2 id={id} className="text-sm font-semibold text-[var(--color-text)]">
+        {title}
+      </h2>
 
-      <div>
-        <h2 className="text-sm font-semibold text-[var(--color-text)]">
-          {title}
-        </h2>
-
-        {subtitle && (
-          <p className="mt-0.5 text-xs text-[var(--color-text-muted)]">
-            {subtitle}
-          </p>
-        )}
-      </div>
+      {subtitle && (
+        <p className="mt-0.5 text-xs text-[var(--color-text-muted)]">
+          {subtitle}
+        </p>
+      )}
     </div>
   );
 }
 
 function LoadingDashboard() {
+  const panel =
+    'rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]';
+
   return (
-    <div className="space-y-5 animate-pulse">
-      <div className="space-y-2">
-        <div className="h-7 w-52 rounded-lg bg-[var(--color-border)]" />
-        <div className="h-4 w-36 rounded-lg bg-[var(--color-border)]" />
+    <div
+      className="space-y-5 motion-safe:animate-pulse"
+      role="status"
+      aria-busy="true"
+    >
+      <span className="sr-only">Loading your dashboard…</span>
+
+      {/* Mirrors the welcome header */}
+      <div className="space-y-2 border-b border-[var(--color-border)] pb-5">
+        <div className="h-3 w-40 rounded bg-[var(--color-border)]" />
+        <div className="h-8 w-56 rounded-lg bg-[var(--color-border)]" />
+        <div className="h-4 w-44 rounded bg-[var(--color-border)]" />
       </div>
 
-      <div className="h-20 rounded-2xl bg-[var(--color-surface)]" />
-      <div className="h-12 rounded-2xl bg-[var(--color-surface)]" />
+      {/* Mirrors the tab bar */}
+      <div className="h-11 border-b border-[var(--color-border)]" />
 
       <div className="grid gap-4 lg:grid-cols-5">
-        <div className="h-64 rounded-2xl bg-[var(--color-surface)] lg:col-span-3" />
-        <div className="h-64 rounded-2xl bg-[var(--color-surface)] lg:col-span-2" />
+        <div className={`h-64 lg:col-span-3 ${panel}`} />
+        <div className={`h-64 lg:col-span-2 ${panel}`} />
       </div>
     </div>
   );
@@ -174,6 +166,7 @@ export default function Dashboard() {
   const [records, setRecords] = useState(null);
   const [personalFocus, setPersonalFocus] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -200,6 +193,7 @@ export default function Dashboard() {
         setPersonalFocus(insights.personalFocus || null);
       } catch (err) {
         console.error('[dashboard] aggregate failed', err);
+        setLoadError(true);
       } finally {
         setLoading(false);
       }
@@ -232,6 +226,28 @@ export default function Dashboard() {
     } catch {
       /* Ignore unavailable localStorage */
     }
+  };
+
+  // WAI-ARIA tabs: arrow keys / Home / End move between tabs.
+  const handleTabKeyDown = (event) => {
+    const currentIndex = TABS.findIndex((item) => item.id === tab);
+    let nextIndex = null;
+
+    if (event.key === 'ArrowRight') {
+      nextIndex = (currentIndex + 1) % TABS.length;
+    } else if (event.key === 'ArrowLeft') {
+      nextIndex = (currentIndex - 1 + TABS.length) % TABS.length;
+    } else if (event.key === 'Home') {
+      nextIndex = 0;
+    } else if (event.key === 'End') {
+      nextIndex = TABS.length - 1;
+    }
+
+    if (nextIndex === null) return;
+
+    event.preventDefault();
+    selectTab(TABS[nextIndex].id);
+    document.getElementById(`dashboard-tab-${TABS[nextIndex].id}`)?.focus();
   };
 
   const avgSuccess = pairs.length
@@ -282,39 +298,74 @@ export default function Dashboard() {
         </div>
 
         <div className="dashboard-welcome-actions">
-          <div className="dashboard-current-streak">
-            <Flame size={17} />
-            <span>Current streak</span>
-            <strong>{overallStreak}</strong>
-            <small>days</small>
-          </div>
+          {!loadError && (
+            <div className="dashboard-current-streak">
+              <Flame size={17} aria-hidden="true" />
+              <span>Current streak</span>
+              <strong>{overallStreak}</strong>
+              <small>days</small>
+            </div>
+          )}
 
           <Link to="/log" className="dashboard-log-button">
-            Log today
-            <ArrowRight size={16} />
+            {today ? "Edit today's log" : 'Log today'}
+            <ArrowRight size={16} aria-hidden="true" />
           </Link>
         </div>
       </header>
 
+      {/* LOAD ERROR — avoids showing empty data as if it were real */}
+      {loadError && (
+        <div
+          role="alert"
+          className="flex flex-col gap-3 rounded-2xl border border-[var(--color-danger)]/40 bg-[var(--color-danger)]/10 p-4 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div>
+            <p className="text-sm font-semibold text-[var(--color-text)]">
+              We couldn't load your latest data
+            </p>
+            <p className="mt-0.5 text-sm text-[var(--color-text-secondary)]">
+              What you see below may be missing or out of date. Check your
+              connection and try again.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 text-sm font-semibold text-[var(--color-text)] transition-colors hover:border-[var(--color-border-hover)]"
+          >
+            <RefreshCw className="h-4 w-4" aria-hidden="true" />
+            Reload
+          </button>
+        </div>
+      )}
+
       {/* TIME AND DAILY STATUS */}
       <TimeAmbient />
 
-      <MissedDayBanner
-        hasLoggedToday={!!today}
-        overallStreak={overallStreak}
-        hasHistory={(monthly?.totalEntries ?? 0) > 0}
-      />
+      {!loadError && (
+        <>
+          <MissedDayBanner
+            hasLoggedToday={!!today}
+            overallStreak={overallStreak}
+            hasHistory={(monthly?.totalEntries ?? 0) > 0}
+          />
 
-      <StreakAtRiskCard
-        primary={streakRisk.primary}
-        items={streakRisk.items}
-      />
+          <StreakAtRiskCard
+            primary={streakRisk.primary}
+            items={streakRisk.items}
+          />
+        </>
+      )}
 
-      {/* DASHBOARD NAVIGATION */}
-      <nav
+      {/* DASHBOARD NAVIGATION — underline tabs so the active tab never
+          competes with the primary "Log today" action */}
+      <div
         role="tablist"
         aria-label="Dashboard sections"
-        className="grid grid-cols-3 gap-1 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-1.5"
+        onKeyDown={handleTabKeyDown}
+        className="flex border-b border-[var(--color-border)]"
       >
         {TABS.map(({ id, label, icon: Icon }) => {
           const active = tab === id;
@@ -322,28 +373,34 @@ export default function Dashboard() {
           return (
             <button
               key={id}
+              id={`dashboard-tab-${id}`}
               type="button"
               role="tab"
               aria-selected={active}
               aria-controls={`dashboard-panel-${id}`}
+              tabIndex={active ? 0 : -1}
               onClick={() => selectTab(id)}
-              className={`relative flex items-center justify-center gap-2 rounded-xl px-2 py-3 text-sm font-semibold transition-all duration-200 ${active
-                ? 'bg-[var(--color-brand-600)] text-white shadow-md shadow-[var(--color-brand-600)]/20'
-                : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg)] hover:text-[var(--color-text)]'
+              className={`-mb-px flex flex-1 items-center justify-center gap-2 border-b-2 px-3 py-3 text-sm font-semibold transition-colors sm:flex-none sm:px-6 ${active
+                ? 'border-[var(--color-brand-500)] text-[var(--color-text)]'
+                : 'border-transparent text-[var(--color-text-secondary)] hover:border-[var(--color-border-hover)] hover:text-[var(--color-text)]'
                 }`}
             >
-              <Icon className="h-4 w-4 shrink-0" />
+              <Icon
+                className={`h-4 w-4 shrink-0 ${active ? 'text-[var(--color-brand-400)]' : ''}`}
+                aria-hidden="true"
+              />
               <span>{label}</span>
             </button>
           );
         })}
-      </nav>
+      </div>
 
       {/* ================= TODAY TAB ================= */}
       {tab === 'today' && (
         <div
           id="dashboard-panel-today"
           role="tabpanel"
+          aria-labelledby="dashboard-tab-today"
           className="space-y-4"
         >
           <div className="grid min-w-0 gap-4 lg:grid-cols-5 lg:items-start">
@@ -368,76 +425,117 @@ export default function Dashboard() {
 
             {/* DAILY OVERVIEW */}
             <div className="order-1 min-w-0 space-y-4 lg:order-2 lg:col-span-2">
-              {!today ? (
-                <div className="relative overflow-hidden rounded-2xl border border-[var(--color-brand-500)]/25 bg-[var(--color-brand-600)]/5 p-5 text-center">
-                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--color-brand-600)]/10 text-[var(--color-brand-400)]">
-                    <Target className="h-6 w-6" />
-                  </div>
-
-                  <h3 className="font-display text-lg font-semibold text-[var(--color-text)]">
+              {/* Not shown when the fetch failed — the alert above explains */}
+              {!today && !loadError && (
+                <section
+                  aria-labelledby="no-log-title"
+                  className="rounded-2xl border border-[var(--color-brand-500)]/25 bg-[var(--color-brand-600)]/5 p-5"
+                >
+                  <h2
+                    id="no-log-title"
+                    className="font-display text-lg font-semibold text-[var(--color-text)]"
+                  >
                     No log yet today
-                  </h3>
+                  </h2>
 
-                  <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-[var(--color-text-secondary)]">
+                  <p className="mt-1.5 max-w-sm text-sm leading-relaxed text-[var(--color-text-secondary)]">
                     Two minutes. Check what you did — good and bad — then
                     close the day honestly.
                   </p>
 
                   <Link
                     to="/log"
-                    className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[var(--color-brand-600)] px-5 py-3 text-sm font-semibold text-white no-underline shadow-md shadow-[var(--color-brand-600)]/20 transition-all hover:-translate-y-0.5 hover:bg-[var(--color-brand-500)]"
+                    className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[var(--color-brand-600)] px-5 py-3 text-sm font-semibold text-white no-underline transition-colors hover:bg-[var(--color-brand-500)]"
                   >
                     Log today
-                    <ArrowRight className="h-4 w-4" />
+                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
                   </Link>
-                </div>
-              ) : (
-                <section>
+                </section>
+              )}
+
+              {today && (
+                <section aria-labelledby="today-overview-title">
                   <SectionHeading
-                    icon={Activity}
+                    id="today-overview-title"
                     title="Today's overview"
                     subtitle="A quick look at your performance"
                   />
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <StatCard
-                      label="Today's score"
-                      value={todayScore}
-                      sub={`Grade ${todayGrade}`}
-                      valueColor={GRADE_COLORS[todayGrade]}
-                      icon={Target}
-                    />
+                  <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]">
+                    {/* Lead metric */}
+                    <div className="flex items-end justify-between gap-4 p-4 sm:p-5">
+                      <div>
+                        <p className="lt-section-label">Today's score</p>
 
-                    <StatCard
-                      label="Monthly average"
-                      value={monthly?.avgScore ?? '—'}
-                      sub={`${monthly?.totalEntries ?? 0} entries`}
-                      icon={TrendingUp}
-                    />
+                        <p
+                          className="mt-1 font-display text-5xl font-semibold tracking-tight"
+                          style={{
+                            color:
+                              GRADE_COLORS[todayGrade] || 'var(--color-text)'
+                          }}
+                        >
+                          {todayScore ?? '—'}
+                        </p>
+                      </div>
 
-                    <StatCard
-                      label="Average mood"
-                      value={monthly?.avgMood ?? '—'}
-                      sub="Out of 5.0"
-                      icon={Sparkles}
-                    />
+                      {todayGrade && (
+                        <p className="pb-1.5 text-sm text-[var(--color-text-secondary)]">
+                          Grade{' '}
+                          <span
+                            className="font-display text-xl font-semibold"
+                            style={{ color: GRADE_COLORS[todayGrade] }}
+                          >
+                            {todayGrade}
+                          </span>
+                        </p>
+                      )}
+                    </div>
 
-                    <StatCard
-                      label="Best day"
-                      value={
-                        monthly?.bestDay
-                          ? new Date(
-                            monthly.bestDay + 'T12:00:00'
-                          ).toLocaleDateString('en-PK', {
-                            month: 'short',
-                            day: 'numeric'
-                          })
-                          : '—'
-                      }
-                      sub="This month"
-                      valueColor="var(--color-brand-400)"
-                      icon={Trophy}
-                    />
+                    {/* Supporting metrics */}
+                    <dl className="divide-y divide-[var(--color-border)] border-t border-[var(--color-border)]">
+                      <div className="flex items-center justify-between gap-4 px-4 py-3 sm:px-5">
+                        <dt className="text-sm text-[var(--color-text-secondary)]">
+                          Monthly average
+                          <span className="block text-xs text-[var(--color-text-muted)]">
+                            {monthly?.totalEntries ?? 0} entries
+                          </span>
+                        </dt>
+                        <dd className="font-display text-lg font-semibold text-[var(--color-text)]">
+                          {monthly?.avgScore ?? '—'}
+                        </dd>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-4 px-4 py-3 sm:px-5">
+                        <dt className="text-sm text-[var(--color-text-secondary)]">
+                          Average mood
+                          <span className="block text-xs text-[var(--color-text-muted)]">
+                            Out of 5.0
+                          </span>
+                        </dt>
+                        <dd className="font-display text-lg font-semibold text-[var(--color-text)]">
+                          {monthly?.avgMood ?? '—'}
+                        </dd>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-4 px-4 py-3 sm:px-5">
+                        <dt className="text-sm text-[var(--color-text-secondary)]">
+                          Best day
+                          <span className="block text-xs text-[var(--color-text-muted)]">
+                            This month
+                          </span>
+                        </dt>
+                        <dd className="font-display text-lg font-semibold text-[var(--color-text)]">
+                          {monthly?.bestDay
+                            ? new Date(
+                              monthly.bestDay + 'T12:00:00'
+                            ).toLocaleDateString('en-PK', {
+                              month: 'short',
+                              day: 'numeric'
+                            })
+                            : '—'}
+                        </dd>
+                      </div>
+                    </dl>
                   </div>
                 </section>
               )}
@@ -450,12 +548,17 @@ export default function Dashboard() {
 
       {/* ================= PROGRESS TAB ================= */}
       {tab === 'progress' && (
-        <div id="dashboard-panel-progress" role="tabpanel" className="space-y-5">
+        <div
+          id="dashboard-panel-progress"
+          role="tabpanel"
+          aria-labelledby="dashboard-tab-progress"
+          className="space-y-4"
+        >
           <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm font-semibold text-[var(--color-text)]">
+              <h2 className="text-sm font-semibold text-[var(--color-text)]">
                 This week’s progress
-              </p>
+              </h2>
               <p className="text-xs text-[var(--color-text-muted)]">
                 Scores, streaks, and a short written review
               </p>
@@ -469,51 +572,37 @@ export default function Dashboard() {
             </Link>
           </div>
           {/* STREAK OVERVIEW */}
-          <section className="relative overflow-hidden rounded-2xl border border-[var(--color-brand-500)]/25 bg-[var(--color-brand-600)]/10 p-5 sm:p-6">
-            <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-[var(--color-brand-500)]/10 blur-3xl" />
+          <section
+            aria-label="Overall logging streak"
+            className="flex items-center justify-between gap-4 rounded-2xl border border-[var(--color-brand-500)]/25 bg-[var(--color-brand-600)]/5 p-4 sm:p-5"
+          >
+            <div className="min-w-0">
+              <p className="lt-section-label">Overall logging streak</p>
 
-            <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-start gap-3">
-                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-brand-600)]/15 text-[var(--color-brand-400)]">
-                  <Flame className="h-6 w-6" />
-                </span>
-
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-brand-400)]">
-                    Overall logging streak
-                  </p>
-
-                  <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-                    Consecutive days you've logged
-                  </p>
-
-                  <p className="mt-2 text-xs text-[var(--color-text-muted)]">
-                    Consistency is built one day at a time.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-baseline gap-2 sm:text-right">
-                <span className="font-display text-5xl font-semibold tracking-tight text-[var(--color-brand-400)]">
-                  {overallStreak}
-                </span>
-
-                <span className="text-sm text-[var(--color-text-secondary)]">
-                  days
-                </span>
-              </div>
+              <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                Consecutive days you've logged
+              </p>
             </div>
+
+            <p className="flex shrink-0 items-baseline gap-1.5">
+              <span className="font-display text-4xl font-semibold tracking-tight text-[var(--color-brand-400)]">
+                {overallStreak}
+              </span>
+
+              <span className="text-sm text-[var(--color-text-secondary)]">
+                days
+              </span>
+            </p>
           </section>
           {/* WEEKLY PERFORMANCE */}
           {weekly.length > 0 && (
             <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 sm:p-5">
               <SectionHeading
-                icon={TrendingUp}
                 title="This week"
                 subtitle="Your daily performance at a glance"
               />
 
-              <div className="grid grid-cols-7 gap-2">
+              <ul className="grid grid-cols-7 gap-1.5 sm:gap-2">
                 {weekly.map((day) => {
                   const isToday = day.date === todayDateKey;
 
@@ -524,19 +613,20 @@ export default function Dashboard() {
                   });
 
                   return (
-                    <div
+                    <li
                       key={day.date}
-                      className={`rounded-xl border px-1 py-3 text-center transition-all duration-200 hover:-translate-y-0.5 ${isToday
-                        ? 'border-[var(--color-brand-500)] bg-[var(--color-brand-600)]/10 shadow-sm'
-                        : 'border-[var(--color-border)] bg-[var(--color-bg)]/40 hover:border-[var(--color-brand-500)]/30'
+                      aria-current={isToday ? 'date' : undefined}
+                      className={`rounded-xl px-1 py-2.5 text-center ${isToday
+                        ? 'bg-[var(--color-brand-600)]/10 ring-1 ring-inset ring-[var(--color-brand-500)]'
+                        : 'bg-[var(--color-bg)]/50'
                         }`}
                     >
-                      <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
                         {label}
                       </p>
 
                       <p
-                        className="mt-2 font-display text-lg font-semibold"
+                        className="mt-1.5 font-display text-base font-semibold sm:text-lg"
                         style={{
                           color: day.grade
                             ? GRADE_COLORS[day.grade]
@@ -546,17 +636,17 @@ export default function Dashboard() {
                         {day.netScore ?? '—'}
                       </p>
 
-                      <p className="mt-1 text-[10px] text-[var(--color-text-secondary)]">
+                      <p className="mt-0.5 text-[11px] text-[var(--color-text-secondary)]">
                         {day.grade ?? '—'}
                       </p>
 
                       {isToday && (
-                        <div className="mx-auto mt-2 h-1 w-4 rounded-full bg-[var(--color-brand-400)]" />
+                        <div className="mx-auto mt-1.5 h-1 w-4 rounded-full bg-[var(--color-brand-400)]" />
                       )}
-                    </div>
+                    </li>
                   );
                 })}
-              </div>
+              </ul>
             </section>
           )}
 
@@ -567,16 +657,8 @@ export default function Dashboard() {
             weekly={weekly}
           />
 
-          {/* ACTIVITY HEATMAP */}
-          <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 sm:p-5">
-            <SectionHeading
-              icon={CalendarDays}
-              title="Activity history"
-              subtitle="Your consistency over time"
-            />
-
-            <ActivityHeatmap weeks={53} />
-          </section>
+          {/* ACTIVITY HEATMAP — renders its own card + heading */}
+          <ActivityHeatmap weeks={53} />
 
           {/* STREAK VISUALIZATION */}
           <CollapsibleSection
@@ -601,6 +683,7 @@ export default function Dashboard() {
         <div
           id="dashboard-panel-insights"
           role="tabpanel"
+          aria-labelledby="dashboard-tab-insights"
           className="space-y-4"
         >
           {/* PERSONALIZED INSIGHTS */}
@@ -609,20 +692,19 @@ export default function Dashboard() {
           <PersonalFocusCard focus={personalFocus} />
 
           {insight && (
-            <section className="relative overflow-hidden rounded-2xl border border-[var(--color-brand-500)]/25 bg-[var(--color-brand-600)]/5 p-5">
-              <div className="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full bg-[var(--color-brand-500)]/10 blur-2xl" />
+            <section className="rounded-2xl border border-[var(--color-brand-500)]/25 bg-[var(--color-brand-600)]/5 p-4 sm:p-5">
+              <div className="flex items-start gap-3">
+                <Lightbulb
+                  className="mt-0.5 h-5 w-5 shrink-0 text-[var(--color-brand-400)]"
+                  aria-hidden="true"
+                />
 
-              <div className="relative flex items-start gap-3">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--color-brand-600)]/15 text-[var(--color-brand-400)]">
-                  <Lightbulb className="h-5 w-5" />
-                </span>
-
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-brand-400)]">
+                <div className="min-w-0">
+                  <h2 className="text-sm font-semibold text-[var(--color-text)]">
                     {insight.title || 'Personal insight'}
-                  </p>
+                  </h2>
 
-                  <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">
+                  <p className="mt-1.5 text-sm leading-relaxed text-[var(--color-text-secondary)]">
                     {insight.message}
                   </p>
                 </div>
@@ -644,19 +726,16 @@ export default function Dashboard() {
                   label="Longest streak"
                   value={records.longestStreak}
                   sub="Days"
-                  icon={Flame}
                 />
 
                 <StatCard
                   label="Best score"
                   value={records.bestScore ?? '—'}
-                  icon={Trophy}
                 />
 
                 <StatCard
                   label="Most habits / day"
                   value={records.mostHabitsInDay ?? '—'}
-                  icon={Target}
                 />
 
                 <StatCard
@@ -672,7 +751,6 @@ export default function Dashboard() {
                       })
                       : '—'
                   }
-                  icon={Medal}
                 />
               </div>
             ) : (
@@ -721,31 +799,28 @@ export default function Dashboard() {
                 </Link>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-5">
                 {/* AVERAGE SUCCESS RATE */}
-                <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)]/40 p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
-                        Average success rate
-                      </p>
+                <div>
+                  <p className="lt-section-label">Average success rate</p>
 
-                      <p
-                        className="mt-1 font-display text-3xl font-semibold"
-                        style={{ color: rateColor(avgSuccess) }}
-                      >
-                        {avgSuccess}%
-                      </p>
-                    </div>
+                  <p
+                    className="mt-1 font-display text-3xl font-semibold"
+                    style={{ color: rateColor(avgSuccess) }}
+                  >
+                    {avgSuccess}%
+                  </p>
 
-                    <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--color-brand-600)]/10 text-[var(--color-brand-400)]">
-                      <TrendingUp className="h-5 w-5" />
-                    </span>
-                  </div>
-
-                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--color-border)]">
+                  <div
+                    role="progressbar"
+                    aria-label="Average success rate"
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={Math.min(100, Math.max(0, avgSuccess))}
+                    className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--color-border)]"
+                  >
                     <div
-                      className="h-full rounded-full transition-all duration-500"
+                      className="h-full rounded-full transition-all duration-500 motion-reduce:transition-none"
                       style={{
                         width: `${Math.min(100, Math.max(0, avgSuccess))}%`,
                         backgroundColor: rateColor(avgSuccess)
@@ -756,41 +831,48 @@ export default function Dashboard() {
 
                 {/* TOP REPLACEMENT PAIRS */}
                 <div>
-                  <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
-                    Top performing pairs
-                  </p>
+                  <p className="lt-section-label">Top performing pairs</p>
 
-                  <div className="grid gap-3 sm:grid-cols-3">
+                  <ul className="mt-2 divide-y divide-[var(--color-border)]">
                     {topPairs.map((pair) => {
                       const successRate = pair.stats?.successRate || 0;
 
                       return (
-                        <div
+                        <li
                           key={pair._id || pair.id}
-                          className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)]/40 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--color-brand-500)]/30"
+                          className="py-3 last:pb-0"
                         >
-                          <p className="text-xs leading-relaxed text-[var(--color-text-secondary)]">
-                            {pair.badHabitLabel ||
-                              pair.badHabitName ||
-                              pair.badHabit ||
-                              'Bad'}{' '}
-                            <span className="text-[var(--color-brand-400)]">
-                              →
-                            </span>{' '}
-                            {pair.goodHabitLabel ||
-                              pair.goodHabitName ||
-                              pair.goodHabit ||
-                              'Good'}
-                          </p>
+                          <div className="flex items-baseline justify-between gap-3">
+                            <p className="min-w-0 text-sm leading-relaxed text-[var(--color-text-secondary)]">
+                              {pair.badHabitLabel ||
+                                pair.badHabitName ||
+                                pair.badHabit ||
+                                'Bad'}{' '}
+                              <span className="text-[var(--color-brand-400)]">
+                                →
+                              </span>{' '}
+                              {pair.goodHabitLabel ||
+                                pair.goodHabitName ||
+                                pair.goodHabit ||
+                                'Good'}
+                            </p>
 
-                          <p
-                            className="mt-2 font-display text-2xl font-semibold"
-                            style={{ color: rateColor(successRate) }}
+                            <p
+                              className="shrink-0 font-display text-lg font-semibold"
+                              style={{ color: rateColor(successRate) }}
+                            >
+                              {pair.stats?.successRate ?? 0}%
+                            </p>
+                          </div>
+
+                          <div
+                            role="progressbar"
+                            aria-label="Success rate"
+                            aria-valuemin={0}
+                            aria-valuemax={100}
+                            aria-valuenow={Math.min(100, Math.max(0, successRate))}
+                            className="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--color-border)]"
                           >
-                            {pair.stats?.successRate ?? 0}%
-                          </p>
-
-                          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--color-border)]">
                             <div
                               className="h-full rounded-full"
                               style={{
@@ -799,10 +881,10 @@ export default function Dashboard() {
                               }}
                             />
                           </div>
-                        </div>
+                        </li>
                       );
                     })}
-                  </div>
+                  </ul>
                 </div>
               </div>
             )}

@@ -612,7 +612,6 @@ button.hm-cell {
   flex-shrink: 0;
   border-radius: 50%;
   background: var(--color-brand-400);
-  box-shadow: 0 0 10px var(--color-brand-400);
 }
 
 .dashboard-date {
@@ -727,6 +726,7 @@ button.hm-cell {
 
   .dashboard-welcome-actions {
     width: 100%;
+    flex-wrap: wrap;
     justify-content: space-between;
   }
 
